@@ -1,54 +1,93 @@
 module Main exposing (..)
 import Playground exposing (..)
+import Random exposing (Generator, int, float, step)
 
-main = view_tiles
-  -- game view update (0,0)
+main = game view update initialModel
 
-view computer (x,y) =
-  [ square blue 400
-      |> move x y
-  ]
+view computer model =
+    tiles model.grid
 
-update computer (x,y) =
-  ( x + toX computer.keyboard
-  , y + toY computer.keyboard
-  )
+update computer model =
+    model |> updateFallingTile
+  
 
+gridSize = 5
 
-main_animation =
-  animation view_animation
+tiles : Grid -> List Shape
+tiles grid =
+    grid
+        |> List.indexedMap (\r row ->
+            List.indexedMap (\c value -> cell value r c) row
+        )
+        |> List.concat
 
-view_animation time =
-  [ square blue 40
-      |> moveX (zigzag -100 100 2 time)
-  ]
+cell : Int -> Int -> Int -> Shape
+cell value row col =
+    let box =
+            square grey 40 |> move ((toFloat col) * 41) ((toFloat row) * 41)
+    in
+    if value== 0 then
+        box
+    else
+        group [box,
+              words black (String.fromInt value) |> move ((toFloat col) * 41) ((toFloat row) * 41)]
 
-
-view_tiles =
-    picture (tiledGrid (emptyGrid 0))
-        -- [square blue 40
-        -- ,square blue 40 |> moveX 41]
-
-
+-- Generate a random integer between min and max (inclusive)
+randomDigitGen = Random.int 1 9
 
 -- Model
 --
 type alias Grid =
     List (List Int)
 
+emptyGrid : Grid
+emptyGrid =
+    List.repeat gridSize (List.repeat gridSize 0)
+
+
 type alias Model =
     { grid: Grid
-    , fallingOffset: Float
-    , fallingCol : Int}
+          ,fallingTile: Maybe (Int, Float)
+    , time : Float}
     
+initialModel: Model
+initialModel =
+    {grid = emptyGrid
+         , fallingTile = Nothing
+         , time = 0
+    }
 
+-- Function to update a specific element in the grid
+updateGrid : Int -> Int -> Int -> Grid -> Grid
+updateGrid rowIndex colIndex newValue grid =
+    grid
+        |> List.indexedMap
+            (\rIndex row ->
+                if rIndex == rowIndex then
+                    List.indexedMap
+                        (\cIndex value ->
+                            if cIndex == colIndex then
+                                newValue  -- Update the specific element
+                            else
+                                value  -- Keep the original value
+                        ) row
+                else
+                    row  -- Keep the original row
+            )
 
-emptyGrid:Int -> Grid
-emptyGrid value =
-    List.repeat 5 (List.repeat 5 value)
+updateFallingTile : Model -> (Model, Cmd Msg)
+updateFallingTile model =
+    case model.fallingTile of
+        Nothing ->
+            let randomCol =
+                    Random.generate (always GenerateRandomCol) randomDigitGen
+            in
+              ({ model | fallingTile = Just (randomCol, 0.0) },  )
 
--- tiledGrid: Grid -> List Shape
-tiledGrid grid =
-    List.concatMap
-        (\r -> List.map(\c -> square grey 40 |> move ((toFloat c) * 41) ((toFloat r) * 41)) (List.range 0 4))
-            (List.range 0 4)
+        Just (row, offset) ->
+            -- Here you can update the falling tile logic as needed
+            model
+
+-- Msg
+type Msg
+    = GenerateRandomCol Int
