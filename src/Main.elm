@@ -5,7 +5,9 @@ import Random exposing (Generator, int, float, step)
 main = game view update initialModel
 
 view computer model =
-    tiles model.grid
+    case model.fallingTile of
+        Just tile ->  (tiles model.grid) ++ [viewFallingTile tile]
+        Nothing -> tiles model.grid
 
 update computer model =
     model |> updateFallingTile
@@ -29,11 +31,20 @@ cell value row col =
     if value== 0 then
         box
     else
-        group [box,
-              words black (String.fromInt value) |> move ((toFloat col) * 41) ((toFloat row) * 41)]
+        group [square blue 40,
+              words white (String.fromInt value) ]
+            |> move ((toFloat col) * 41) ((toFloat row) * 41)
+
+
+viewFallingTile : FallingTile -> Shape
+viewFallingTile t =
+        group [square blue 40
+              , words white (String.fromInt t.value)]
+        |> move ((toFloat t.col) * 41) (t.offset)
 
 -- Generate a random integer between min and max (inclusive)
 randomDigitGen = Random.int 1 9
+randomColGen = Random.int 0 4
 
 -- Model
 --
@@ -44,18 +55,23 @@ emptyGrid : Grid
 emptyGrid =
     List.repeat gridSize (List.repeat gridSize 0)
 
+type alias FallingTile = {value:Int, col:Int, row:Int, offset:Float}
 
 type alias Model =
     { grid: Grid
-          ,fallingTile: Maybe (Int, Float)
-    , time : Float}
+    , fallingTile: Maybe FallingTile
+    , time : Float
+    , seed : Random.Seed}
     
 initialModel: Model
 initialModel =
-    {grid = emptyGrid
-         , fallingTile = Nothing
-         , time = 0
-    }
+        {grid = emptyGrid
+        , fallingTile = Nothing
+        , time = 0
+        , seed = Random.initialSeed 12345
+        }
+
+
 
 -- Function to update a specific element in the grid
 updateGrid : Int -> Int -> Int -> Grid -> Grid
@@ -75,19 +91,34 @@ updateGrid rowIndex colIndex newValue grid =
                     row  -- Keep the original row
             )
 
-updateFallingTile : Model -> (Model, Cmd Msg)
+updateFallingTile : Model -> Model
 updateFallingTile model =
     case model.fallingTile of
         Nothing ->
-            let randomCol =
-                    Random.generate (always GenerateRandomCol) randomDigitGen
+            let (randomCol, seed1) = Random.step randomColGen model.seed
+                (randVal, seed2) = Random.step randomDigitGen seed1
+                row = firstEmptyRow randomCol model.grid
             in
-              ({ model | fallingTile = Just (randomCol, 0.0) },  )
+                case row of
+                    Just r ->
+                        { model | fallingTile = Just {value= randVal, col = randomCol, offset = (gridSize * 41), row=r}
+                        , seed = seed2 }
+                    Nothing ->
+                        {model | seed=seed2}
+        Just tile ->
+            if tile.offset <= 41*(toFloat tile.row) then
+                {model | fallingTile = Nothing, grid = updateGrid tile.row tile.col tile.value model.grid}
+            else
+                {model| fallingTile = Just {tile | offset = tile.offset-0.40} }
 
-        Just (row, offset) ->
-            -- Here you can update the falling tile logic as needed
-            model
 
--- Msg
-type Msg
-    = GenerateRandomCol Int
+firstEmptyRow col grid =
+    List.indexedMap
+        (\r row ->
+        if List.head (List.drop col row) == Just 0 then
+            Just r
+        else
+            Nothing)
+        grid
+            |> List.filterMap identity
+               |> List.head
