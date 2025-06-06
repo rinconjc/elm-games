@@ -10,7 +10,9 @@ view computer model =
         Nothing -> tiles model.grid
 
 update computer model =
-    model |> updateFallingTile
+    model
+        |> updateSeed computer
+        |> updateFallingTile
   
 
 gridSize = 5
@@ -60,18 +62,20 @@ type alias FallingTile = {value:Int, col:Int, row:Int, offset:Float}
 type alias Model =
     { grid: Grid
     , fallingTile: Maybe FallingTile
-    , time : Float
     , seed : Random.Seed}
     
 initialModel: Model
 initialModel =
         {grid = emptyGrid
         , fallingTile = Nothing
-        , time = 0
-        , seed = Random.initialSeed 12345
+        , seed = Random.initialSeed 0
         }
 
-
+updateSeed : Computer -> Model -> Model
+updateSeed computer model =
+    case model.fallingTile of
+        Nothing -> {model | seed = Random.initialSeed computer.time.now}
+        Just _ -> model
 
 -- Function to update a specific element in the grid
 updateGrid : Int -> Int -> Int -> Grid -> Grid
