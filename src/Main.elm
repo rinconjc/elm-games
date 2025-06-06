@@ -68,13 +68,17 @@ initialModel: Model
 initialModel =
         {grid = emptyGrid
         , fallingTile = Nothing
-        , seed = Random.initialSeed 0
+        , seed = Random.initialSeed 1
         }
 
 updateSeed : Computer -> Model -> Model
 updateSeed computer model =
     case model.fallingTile of
-        Nothing -> {model | seed = Random.initialSeed computer.time.now}
+        Nothing ->
+            let seed = Random.initialSeed computer.time.now
+                (_, seed1) = Random.step (Random.int 0 1000) seed
+            in
+            {model | seed = seed1 }
         Just _ -> model
 
 -- Function to update a specific element in the grid
