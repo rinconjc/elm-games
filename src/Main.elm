@@ -1,19 +1,21 @@
 module Main exposing (..)
 import Playground exposing (..)
 import Random exposing (Generator, int, float, step)
+import Set exposing (toList)
 
 main = game view update initialModel
 
 view computer model =
-    viewEmptyGrid
-    -- case model.fallingTile of
-    --     Just tile ->  (viewTiles model.grid) ++ [viewFallingTile tile]
-    --     Nothing -> viewTiles model.grid
+    case model.fallingTile of
+        Just tile ->
+            viewEmptyGrid ++ List.map viewTile model.tiles ++ [viewTile tile]
+        Nothing ->
+            viewEmptyGrid ++ List.map viewTile model.tiles
 
 update computer model =
     model
         -- |> updateSeed computer
-        -- |> updateFallingTile
+        |> updateNewTile
   
 
 gridSize = 5
@@ -32,6 +34,12 @@ emptyTile i =
     square grey 40
         |> move (41.0 * (toFloat col)) (41.0 * (toFloat row))
 
+
+viewTile: Tile -> Shape
+viewTile tile =
+    group [square blue 40,
+          words white (String.fromInt tile.value)]
+        |> move (toFloat (41 * tile.col)) (tile.top)
 
 -- viewTiles : List Tile -> List Shape
 -- viewTiles tiles =
@@ -59,12 +67,6 @@ cell value row col =
             |> move ((toFloat col) * 41) ((toFloat row) * 41)
 
 
-viewFallingTile : FallingTile -> Shape
-viewFallingTile t =
-        group [square blue 40
-              , words white (String.fromInt t.value)]
-        |> move ((toFloat t.col) * 41) (t.offset)
-
 -- Generate a random integer between min and max (inclusive)
 randomDigitGen = Random.int 1 9
 randomColGen = Random.int 0 4
@@ -72,10 +74,9 @@ randomColGen = Random.int 0 4
 -- Model
 --
 type alias Tile =
-    {pos: (Int, Int)
-    ,index: Maybe Int
+    {top: Float
+    ,col: Int
     ,value: Int
-    ,target: (Int, Int)
     ,falling: Bool}
 
 type alias Grid =
@@ -88,65 +89,75 @@ emptyGrid =
 type alias FallingTile = {value:Int, col:Int, row:Int, offset:Float}
 
 type alias Model =
-    { tiles: List Tile
-    , fallingTile: Maybe Tile
+    { tiles: List (Maybe Tile)
+    , fallingTiles: List Tile
     , seed : Random.Seed}
     
 initialModel: Model
 initialModel =
-        {tiles = []
-        , fallingTile = Nothing
-        , seed = Random.initialSeed 1
+        {tiles = List.repeat (gridSize*gridSize) Nothing
+        , fallingTiles = []
+        , seed = Random.initialSeed 100
         }
 
 updateSeed : Computer -> Model -> Model
 updateSeed computer model =
-    case model.fallingTile of
-        Nothing ->
+    case model.fallingTiles of
+        [] ->
             let seed = Random.initialSeed computer.time.now
                 (_, seed1) = Random.step (Random.int 0 1000) seed
             in
             {model | seed = seed1 }
-        Just _ -> model
+        _ -> model
 
--- Function to update a specific element in the grid
-updateGrid : Int -> Int -> Int -> Grid -> Grid
-updateGrid rowIndex colIndex newValue grid =
-    grid
-        |> List.indexedMap
-            (\rIndex row ->
-                if rIndex == rowIndex then
-                    List.indexedMap
-                        (\cIndex value ->
-                            if cIndex == colIndex then
-                                newValue  -- Update the specific element
-                            else
-                                value  -- Keep the original value
-                        ) row
+
+updateNewTile : Model -> Model
+updateNewTile model =
+    case model.fallingTiles of
+        [] ->
+            let (newCol, seed1) = Random.step randomColGen model.seed
+                (randVal, seed2) = Random.step randomDigitGen seed1
+                top = (gridSize * 41)
+            in
+                if isOccupied newCol (gridSize - 1) model.tiles then
+                  {model| seed = seed2}
                 else
-                    row  -- Keep the original row
-            )
+                  { model | fallingTiles =
+                         {value= randVal, col = newCol, top = top, falling=True} :: model.fallingTiles
+                        , seed = seed2 }
+        tiles ->
+            let updateTiles fallings m =
+                case fallings of
+                    tile::rest ->
+                        let top = tile.top - 0.40
+                            rowBelow = floor ((tile.top - 3.0)/41.0)
+                        in
+                        if top <0 || isOccupied tile.col rowBelow m.tiles then
+                            updateTiles rest {m | tiles =
+                                updateTileAt (gridSize * (rowBelow+1)+tile.col) (Just {tile|falling=False,
+                                    , top = toFloat (rowBelow+1)*41}) m.tiles}
+                        else
+                            updateTiles rest {model| fallingTiles = {tile | top = top} :: m.fallingTiles}
+                    [] -> m
+            in
+                updateTiles tiles {model | fallingTiles = []}
 
--- updateFallingTile : Model -> Model
--- updateFallingTile model =
---     case model.fallingTile of
---         Nothing ->
---             let (randomCol, seed1) = Random.step randomColGen model.seed
---                 (randVal, seed2) = Random.step randomDigitGen seed1
---                 row = firstEmptyRow randomCol model.grid
---             in
---                 case row of
---                     Just r ->
---                         { model | fallingTile = Just {value= randVal, col = randomCol, offset = (gridSize * 41), row=r}
---                         , seed = seed2 }
---                     Nothing ->
---                         {model | seed=seed2}
---         Just tile ->
---             if tile.offset <= 41*(toFloat tile.row) then
---                 {model | fallingTile = Nothing, grid = updateGrid tile.row tile.col tile.value model.grid}
---             else
---                 {model| fallingTile = Just {tile | offset = tile.offset-0.40} }
+isOccupied : Int -> Int -> List (Maybe Tile) -> Bool
+isOccupied col row tiles =
+    let index =  row * gridSize + col
+    in
+        tiles |> List.any (\t -> t.index == Just index)
 
+
+updateTileAt: Int -> Maybe Tile -> List (Maybe Tile) -> List (Maybe Tile)
+updateTileAt index tile tiles =
+    let
+        (before, _ :: after)=
+            List.splitAt index tiles
+    in
+        before ++ (tile :: after)
+
+-- top = row*41 + offset; top/41: row, offset
 
 firstEmptyRow : Int -> Grid -> Maybe Int
 firstEmptyRow col grid =
