@@ -2,24 +2,27 @@ module Main exposing (..)
 import Playground exposing (..)
 import Random exposing (Generator, int, float, step)
 import Set exposing (toList)
+import String exposing (toList)
+import Set exposing (remove)
 
 main = game view update initialModel
 
+view : Computer -> Model -> List Shape
 view computer model =
-    case model.fallingTile of
-        Just tile ->
-            viewEmptyGrid ++ List.map viewTile model.tiles ++ [viewTile tile]
-        Nothing ->
-            viewEmptyGrid ++ List.map viewTile model.tiles
+    viewEmptyGrid
+    ++ (model.tiles
+       |> List.filterMap identity
+       |> List.map viewTile)
+    ++ List.map viewTile model.fallingTiles
 
+update: Computer -> Model -> Model
 update computer model =
     model
         -- |> updateSeed computer
-        |> updateNewTile
+        |> updateFallingTiles
+        |> removeEquations
   
-
 gridSize = 5
-
 
 viewEmptyGrid: List Shape
 viewEmptyGrid =
@@ -41,31 +44,6 @@ viewTile tile =
           words white (String.fromInt tile.value)]
         |> move (toFloat (41 * tile.col)) (tile.top)
 
--- viewTiles : List Tile -> List Shape
--- viewTiles tiles =
---     List.range 0 gridSize
---         |> List.indexedMap (\r ->
---                            List.indexedMap (\c -> viewTile r c ))
-    -- tilej
-    --     |> List.filterMap (\t -> t.index)
-    --        |>
-        -- |> List.indexedMap (\r row ->
-        --     List.indexedMap (\c value -> cell value r c) row
-        -- )
-        -- |> List.concat
-
-cell : Int -> Int -> Int -> Shape
-cell value row col =
-    let box =
-            square grey 40 |> move ((toFloat col) * 41) ((toFloat row) * 41)
-    in
-    if value== 0 then
-        box
-    else
-        group [square blue 40,
-              words white (String.fromInt value) ]
-            |> move ((toFloat col) * 41) ((toFloat row) * 41)
-
 
 -- Generate a random integer between min and max (inclusive)
 randomDigitGen = Random.int 1 9
@@ -76,8 +54,7 @@ randomColGen = Random.int 0 4
 type alias Tile =
     {top: Float
     ,col: Int
-    ,value: Int
-    ,falling: Bool}
+    ,value: Int}
 
 type alias Grid =
     List (List Int)
@@ -91,14 +68,15 @@ type alias FallingTile = {value:Int, col:Int, row:Int, offset:Float}
 type alias Model =
     { tiles: List (Maybe Tile)
     , fallingTiles: List Tile
-    , seed : Random.Seed}
+    , seed : Random.Seed
+    , selectedTile: Maybe Int}
     
 initialModel: Model
 initialModel =
         {tiles = List.repeat (gridSize*gridSize) Nothing
         , fallingTiles = []
-        , seed = Random.initialSeed 100
-        }
+        , seed = Random.initialSeed 17
+        , selectedTile = Nothing}
 
 updateSeed : Computer -> Model -> Model
 updateSeed computer model =
@@ -111,8 +89,8 @@ updateSeed computer model =
         _ -> model
 
 
-updateNewTile : Model -> Model
-updateNewTile model =
+updateFallingTiles : Model -> Model
+updateFallingTiles model =
     case model.fallingTiles of
         [] ->
             let (newCol, seed1) = Random.step randomColGen model.seed
@@ -123,22 +101,22 @@ updateNewTile model =
                   {model| seed = seed2}
                 else
                   { model | fallingTiles =
-                         {value= randVal, col = newCol, top = top, falling=True} :: model.fallingTiles
+                         {value= randVal, col = newCol, top = top} :: model.fallingTiles
                         , seed = seed2 }
         tiles ->
-            let updateTiles fallings m =
-                case fallings of
-                    tile::rest ->
-                        let top = tile.top - 0.40
-                            rowBelow = floor ((tile.top - 3.0)/41.0)
-                        in
-                        if top <0 || isOccupied tile.col rowBelow m.tiles then
-                            updateTiles rest {m | tiles =
-                                updateTileAt (gridSize * (rowBelow+1)+tile.col) (Just {tile|falling=False,
-                                    , top = toFloat (rowBelow+1)*41}) m.tiles}
-                        else
-                            updateTiles rest {model| fallingTiles = {tile | top = top} :: m.fallingTiles}
-                    [] -> m
+            let updateTiles : List Tile -> Model -> Model
+                updateTiles fallings m =
+                    case fallings of
+                        tile::rest ->
+                            let top = tile.top - 0.80
+                                rowBelow = floor ((tile.top - 3.0)/41.0)
+                            in
+                            if top <0 || isOccupied tile.col rowBelow m.tiles then
+                                updateTiles rest {m | tiles =
+                                    updateTileAt (gridSize * (rowBelow+1)+tile.col) (Just {tile| top = toFloat (rowBelow+1)*41}) m.tiles}
+                            else
+                                updateTiles rest {m| fallingTiles = {tile | top = top} :: m.fallingTiles}
+                        [] -> m
             in
                 updateTiles tiles {model | fallingTiles = []}
 
@@ -146,19 +124,30 @@ isOccupied : Int -> Int -> List (Maybe Tile) -> Bool
 isOccupied col row tiles =
     let index =  row * gridSize + col
     in
-        tiles |> List.any (\t -> t.index == Just index)
+        tiles
+            |> List.drop index
+            |> List.head
+            |> Maybe.andThen identity
+            |> isJust
 
+isJust : Maybe a -> Bool
+isJust maybe =
+    case maybe of
+        Just _ -> True
+        _ -> False
 
 updateTileAt: Int -> Maybe Tile -> List (Maybe Tile) -> List (Maybe Tile)
 updateTileAt index tile tiles =
     let
-        (before, _ :: after)=
-            List.splitAt index tiles
+        before = List.take index tiles
+        rest = List.drop index tiles
     in
-        before ++ (tile :: after)
+        case rest of
+            (_ ::after) -> before ++ (tile :: after)
+            [] -> before ++ [tile]
+
 
 -- top = row*41 + offset; top/41: row, offset
-
 firstEmptyRow : Int -> Grid -> Maybe Int
 firstEmptyRow col grid =
     List.indexedMap
@@ -171,75 +160,95 @@ firstEmptyRow col grid =
             |> List.filterMap identity
                |> List.head
 
+isValidEquation : Int -> Int -> Int -> Bool
+isValidEquation a b c =
+    (a + b == c) ||
+    (a - b == c ) ||
+    (a * b == c) ||
+    (a // b == c)
 
--- findAndSwapTriplets : Grid -> Grid
--- findAndSwapTriplets grid =
---     let
---         -- Helper to find all matching triplets in a row
---         findInRow : Int -> List Int -> Maybe (Int, Int)  -- (row, col) of starts of triplets
---         findInRow rowIndex row =
---             let
---                 findHelper col remaining =
---                     case remaining of
---                         a :: b :: c :: _ ->
---                             if a + b == c then
---                                 Just (rowIndex, col)
---                             else
---                                 findHelper (col + 1) (b :: c :: List.drop 2 remaining)
---                         _ ->
---                             Nothing
---             in
---             findHelper 0 row
+tripletStarts : Int -> List a -> List Int
+tripletStarts n grid =
+    let
+        gridLength = List.length grid
+        isValidStart i =
+            let
+                rowStart = i // n * n
+                rowEnd = rowStart + n - 1
+            in
+            i + 2 <= rowEnd && i + 2 < gridLength
+    in
+    List.range 0 (gridLength - 3)
+        |> List.filter isValidStart
 
---         -- Find all triplet positions in the grid (horizontal only)
---         tripletPositions : Maybe (Int, Int)
---         tripletPositions =
---             grid
---                 |> List.indexedMap findInRow
---                 |> List.filterMap identity
---                 |> List.head
+findFirstTriplet : (a -> a -> a -> Bool) -> Int -> List a -> Maybe ( List a, Int )
+findFirstTriplet predicate n grid =
+    let
+        starts = tripletStarts n grid
+        checkStart i =
+            let
+                triplet =
+                    List.drop i grid
+                        |> List.take 3
+            in
+            case triplet of
+                [ a, b, c ] ->
+                    if predicate a b c then
+                        Just ( triplet, i )
+                    else
+                        Nothing
+                _ ->
+                    Nothing
+    in
+    List.filterMap checkStart starts
+        |> List.head
 
---         -- Swap a cell with the one above it (or remove if at top)
---         swapWithAbove : (Int, Int) -> Grid -> Grid
---         swapWithAbove (row, col) g =
---             if row == gridSize then
---                 -- At top row, remove the element
---                 List.indexedMap
---                     (\r rowList ->
---                         if r == row then
---                             List.take col rowList ++ List.drop (col + 1) rowList
---                         else
---                             rowList
---                     )
---                     g
---             else
---                 -- Swap with cell above
---                 List.indexedMap
---                     (\r rowList ->
---                         if r == row - 1 then
---                             -- Row above: take the cell from below
---                             let
---                                 currentCell = Maybe.withDefault 0 (List.head (List.drop col (List.drop row grid |> List.head |> Maybe.withDefault [])))
---                             in
---                             List.take col rowList ++ [currentCell] ++ List.drop (col + 1) rowList
---                         else if r == row then
---                             -- Current row: take the cell from above
---                             let
---                                 aboveCell = Maybe.withDefault 0 (List.head (List.drop col (List.drop (row - 1) grid |> List.head |> Maybe.withDefault [])))
---                             in
---                             List.take col rowList ++ [aboveCell] ++ List.drop (col + 1) rowList
---                         else
---                             rowList
---                     )
---                     g
+removeEquations: Model -> Model
+removeEquations model =
+    let predicate: Maybe Tile -> Maybe Tile -> Maybe Tile -> Bool
+        predicate t1 t2 t3 =
+            case (t1,t2,t3) of
+                (Just a, Just b, Just c) -> isValidEquation a.value b.value c.value
+                _ -> False
+    in
+    case findFirstTriplet predicate gridSize model.tiles of
+        Just (_, index) ->
+            let removeTriplet :Bool-> Int -> Model -> Model
+                removeTriplet falls pos m =
+                    let before = List.take pos m.tiles
+                        triplet = List.drop pos m.tiles |> List.take 3 |> List.filterMap identity
+                        after = List.drop (pos+3) m.tiles
+                        newmodel = {m | tiles = before ++ [Nothing, Nothing, Nothing] ++ after }
+                    in
+                        if falls then
+                            {newmodel | fallingTiles = newmodel.fallingTiles ++ triplet}
+                        else
+                            newmodel
+            in
+                positionsAbove gridSize index
+                    |> List.foldl (\i m -> removeTriplet True i m) (removeTriplet False index model)
+        Nothing -> model
 
---         -- Process all found triplets
---         processAllTriplets : List (List Int) -> List (Int, Int) -> List (List Int)
---         processAllTriplets g positions =
---             case positions of
---                 [] ->
---                     g
---                 pos :: rest ->
---                     processAllTriplets (swapWithAbove pos g) rest
---     in
---     processAllTriplets grid tripletPositions
+positionsAbove: Int -> Int -> List Int
+positionsAbove n i =
+    let rowsAbove = (n*n - i - 1) // n
+    in
+        List.range 1 rowsAbove
+            |> List.map (\j -> j*n + i)
+
+
+updateSwap: Computer -> Model -> Model
+updateSwap comp model =
+    if comp.mouse.click then
+        case model.selectedTile of
+            Just _ -> model
+            Nothing -> {model | selectedTile = Just (indexOf comp.mouse.x comp.mouse.y) }
+    else
+        model
+
+
+indexOf: Float -> Float -> Int
+indexOf x y =
+    let col = floor (x / 41)
+        row = floor (y / 41)
+    in row * gridSize + col
