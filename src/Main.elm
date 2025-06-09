@@ -25,6 +25,9 @@ update computer model =
         |> removeEquations
 
 gridSize = 5
+tileSideIn = 40
+tileSideOut = 42
+
 
 type alias TileTheme = {
         color: Color,
@@ -46,17 +49,17 @@ emptyTile i =
     let row = i // gridSize
         col = modBy gridSize i
     in
-    square grey 40
-        |> move (41.0 * (toFloat col)) (41.0 * (toFloat row))
+    square grey tileSideIn
+        |> move (tileSideOut * (toFloat col)) (tileSideOut * (toFloat row))
 
 viewTile : Tile -> Shape
 viewTile tile = viewAnyTile defaultTheme tile
 
 viewAnyTile: TileTheme -> Tile -> Shape
 viewAnyTile theme tile =
-    group [square theme.color 40,
+    group [square theme.color tileSideIn,
           words theme.textColor (String.fromInt tile.value)]
-        |> move (toFloat (41 * tile.col)) (tile.top)
+        |> move (toFloat (tileSideOut * tile.col)) (tile.top)
 
 viewSelectedTile: Model -> List Shape
 viewSelectedTile model =
@@ -120,7 +123,7 @@ updateFallingTiles model =
         [] ->
             let (newCol, seed1) = Random.step randomColGen model.seed
                 (randVal, seed2) = Random.step randomDigitGen seed1
-                top = (gridSize * 41)
+                top = (gridSize * tileSideOut)
             in
                 if isOccupied newCol (gridSize - 1) model.tiles then
                   {model| seed = seed2}
@@ -134,11 +137,11 @@ updateFallingTiles model =
                     case fallings of
                         tile::rest ->
                             let top = tile.top - 0.80
-                                rowBelow = floor ((tile.top - 3.0)/41.0)
+                                rowBelow = floor ((tile.top - 3.0)/tileSideOut)
                             in
                             if top <0 || isOccupied tile.col rowBelow m.tiles then
                                 updateTiles rest {m | tiles =
-                                    updateTileAt (gridSize * (rowBelow+1)+tile.col) (Just {tile| top = toFloat (rowBelow+1)*41}) m.tiles}
+                                    updateTileAt (gridSize * (rowBelow+1)+tile.col) (Just {tile| top = toFloat (rowBelow+1)*tileSideOut}) m.tiles}
                             else
                                 updateTiles rest {m| fallingTiles = {tile | top = top} :: m.fallingTiles}
                         [] -> m
@@ -264,6 +267,8 @@ positionsAbove n i =
 updateSwap: Computer -> Model -> Model
 updateSwap comp model =
     if comp.mouse.click then
+        let _ = Debug.log "mouse:" comp.mouse
+        in
         {model | selectedTile = Just (indexOf comp.mouse.x comp.mouse.y) }
         -- case model.selectedTile of
         --     Just _ -> model
@@ -273,6 +278,7 @@ updateSwap comp model =
 
 indexOf: Float -> Float -> Int
 indexOf x y =
-    let col = floor (x / 41)
-        row = floor (y / 41)
+    let halfSize = tileSideIn/2
+        col = floor ((x + halfSize) / tileSideOut)
+        row = floor ((y + halfSize) / tileSideOut)
     in row * gridSize + col
