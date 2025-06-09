@@ -14,15 +14,27 @@ view computer model =
        |> List.filterMap identity
        |> List.map viewTile)
     ++ List.map viewTile model.fallingTiles
+    ++ (viewSelectedTile model)
 
 update: Computer -> Model -> Model
 update computer model =
     model
         -- |> updateSeed computer
+        |> updateSwap computer
         |> updateFallingTiles
         |> removeEquations
-  
+
 gridSize = 5
+
+type alias TileTheme = {
+        color: Color,
+        textColor: Color
+    }
+
+defaultTheme : TileTheme
+defaultTheme = {color=blue, textColor=white}
+selectedTheme: TileTheme
+selectedTheme = {color=green, textColor=white}
 
 viewEmptyGrid: List Shape
 viewEmptyGrid =
@@ -37,13 +49,26 @@ emptyTile i =
     square grey 40
         |> move (41.0 * (toFloat col)) (41.0 * (toFloat row))
 
+viewTile : Tile -> Shape
+viewTile tile = viewAnyTile defaultTheme tile
 
-viewTile: Tile -> Shape
-viewTile tile =
-    group [square blue 40,
-          words white (String.fromInt tile.value)]
+viewAnyTile: TileTheme -> Tile -> Shape
+viewAnyTile theme tile =
+    group [square theme.color 40,
+          words theme.textColor (String.fromInt tile.value)]
         |> move (toFloat (41 * tile.col)) (tile.top)
 
+viewSelectedTile: Model -> List Shape
+viewSelectedTile model =
+    case model.selectedTile of
+        Just index -> case model.tiles
+                   |> List.drop index
+                   |> List.head
+                   |> Maybe.andThen identity
+                      of
+                          Just tile -> [viewAnyTile selectedTheme tile]
+                          _ -> []
+        _ -> []
 
 -- Generate a random integer between min and max (inclusive)
 randomDigitGen = Random.int 1 9
@@ -236,16 +261,15 @@ positionsAbove n i =
         List.range 1 rowsAbove
             |> List.map (\j -> j*n + i)
 
-
 updateSwap: Computer -> Model -> Model
 updateSwap comp model =
     if comp.mouse.click then
-        case model.selectedTile of
-            Just _ -> model
-            Nothing -> {model | selectedTile = Just (indexOf comp.mouse.x comp.mouse.y) }
+        {model | selectedTile = Just (indexOf comp.mouse.x comp.mouse.y) }
+        -- case model.selectedTile of
+        --     Just _ -> model
+        --     Nothing -> {model | selectedTile = Just (indexOf comp.mouse.x comp.mouse.y) }
     else
         model
-
 
 indexOf: Float -> Float -> Int
 indexOf x y =
