@@ -195,8 +195,8 @@ isValidEquation a b c =
     (a * b == c) ||
     (a // b == c)
 
-tripletStarts : Int -> List a -> List Int
-tripletStarts n grid =
+horzTripletStarts : Int -> List a -> List Int
+horzTripletStarts n grid =
     let
         gridLength = List.length grid
         isValidStart i =
@@ -209,10 +209,16 @@ tripletStarts n grid =
     List.range 0 (gridLength - 3)
         |> List.filter isValidStart
 
+
+vertTripletStarts: Int -> List a -> List Int
+vertTripletStarts n grid =
+    []
+
+
 findFirstTriplet : (a -> a -> a -> Bool) -> Int -> List a -> Maybe ( List a, Int )
 findFirstTriplet predicate n grid =
     let
-        starts = tripletStarts n grid
+        starts = horzTripletStarts n grid
         checkStart i =
             let
                 triplet =
@@ -268,8 +274,8 @@ updateSwap: Computer -> Model -> Model
 updateSwap comp model =
     if comp.mouse.click then
         let
-            _ = Debug.log "mouse:" comp.mouse
             index = (indexOf comp.mouse.x comp.mouse.y)
+            _ = Debug.log "mouse, index:" (comp.mouse, index)
         in
         case model.selectedTile of
             Just selected ->
@@ -291,9 +297,8 @@ indexOf x y =
 
 isAdjacent : Int->Int->Bool
 isAdjacent i j =
-    abs (i - j) == 1 &&
-        ((modBy gridSize j) == (modBy gridSize i) -- same column
-        || (i // gridSize) == (j // gridSize)) --same row
+    abs (i - j) == 1 && (i // gridSize) == (j // gridSize) --same row
+        || abs (i - j) == gridSize && (modBy gridSize j) == (modBy gridSize i) -- same column
 
 swap : Int -> Int -> List (Maybe Tile) -> List (Maybe Tile)
 swap i j tiles =
@@ -302,19 +307,19 @@ swap i j tiles =
        tileAt x = tiles |> List.drop x |> List.head |> Maybe.andThen identity
        itile = tileAt i
        jtile = tileAt j
-       _ = Debug.log "swapping:" (i, j)
+       vertical = modBy gridSize i == modBy gridSize j
    in
-       case (itile, jtile) of
-           (Just it, Just jt) ->
+       case (itile, jtile, vertical) of
+           (Just it, Just jt, _) ->
                tiles
-                   |> updateTileAt i (Just {jt|value = it.value})
-                   |> updateTileAt j (Just {it|value = jt.value})
+                   |> updateTileAt i (Just {it|value = jt.value})
+                   |> updateTileAt j (Just {jt|value = it.value})
 
-           (Just it, Nothing) ->
+           (Just it, Nothing, False)  ->
                 tiles
                     |> updateTileAt i Nothing
                     |> updateTileAt j (Just {it|col = modBy gridSize j})
-           (_, Just jt) ->
+           (_, Just jt, False)  ->
                 tiles
                     |> updateTileAt i (Just {jt|col = modBy gridSize i})
                     |> updateTileAt j Nothing
