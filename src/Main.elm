@@ -267,12 +267,18 @@ positionsAbove n i =
 updateSwap: Computer -> Model -> Model
 updateSwap comp model =
     if comp.mouse.click then
-        let _ = Debug.log "mouse:" comp.mouse
+        let
+            _ = Debug.log "mouse:" comp.mouse
+            index = (indexOf comp.mouse.x comp.mouse.y)
         in
-        {model | selectedTile = Just (indexOf comp.mouse.x comp.mouse.y) }
-        -- case model.selectedTile of
-        --     Just _ -> model
-        --     Nothing -> {model | selectedTile = Just (indexOf comp.mouse.x comp.mouse.y) }
+        case model.selectedTile of
+            Just selected ->
+                if isAdjacent index selected then
+                    {model | tiles = swap index selected model.tiles
+                    , selectedTile = Nothing}
+                else
+                    {model | selectedTile = Nothing}
+            Nothing -> {model | selectedTile = Just index }
     else
         model
 
@@ -282,3 +288,34 @@ indexOf x y =
         col = floor ((x + halfSize) / tileSideOut)
         row = floor ((y + halfSize) / tileSideOut)
     in row * gridSize + col
+
+isAdjacent : Int->Int->Bool
+isAdjacent i j =
+    abs (i - j) == 1 &&
+        ((modBy gridSize j) == (modBy gridSize i) -- same column
+        || (i // gridSize) == (j // gridSize)) --same row
+
+swap : Int -> Int -> List (Maybe Tile) -> List (Maybe Tile)
+swap i j tiles =
+   let
+       tileAt : Int -> Maybe Tile
+       tileAt x = tiles |> List.drop x |> List.head |> Maybe.andThen identity
+       itile = tileAt i
+       jtile = tileAt j
+       _ = Debug.log "swapping:" (i, j)
+   in
+       case (itile, jtile) of
+           (Just it, Just jt) ->
+               tiles
+                   |> updateTileAt i (Just {jt|value = it.value})
+                   |> updateTileAt j (Just {it|value = jt.value})
+
+           (Just it, Nothing) ->
+                tiles
+                    |> updateTileAt i Nothing
+                    |> updateTileAt j (Just {it|col = modBy gridSize j})
+           (_, Just jt) ->
+                tiles
+                    |> updateTileAt i (Just {jt|col = modBy gridSize i})
+                    |> updateTileAt j Nothing
+           _ -> tiles
