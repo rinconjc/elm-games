@@ -188,12 +188,15 @@ firstEmptyRow col grid =
             |> List.filterMap identity
                |> List.head
 
-isValidEquation : Int -> Int -> Int -> Bool
-isValidEquation a b c =
-    (a + b == c) ||
-    (a - b == c ) ||
-    (a * b == c) ||
-    (a // b == c)
+isValidEquation : List (Maybe Int) -> Bool
+isValidEquation triplet =
+    case triplet of
+        [Just a, Just b, Just c ] ->
+            (a + b == c) ||
+            (a - b == c ) ||
+            (a * b == c) ||
+            (a // b == c)
+        _ -> False
 
 horzTripletStarts : Int -> List a -> List Int
 horzTripletStarts n grid =
@@ -210,13 +213,36 @@ horzTripletStarts n grid =
         |> List.filter isValidStart
 
 
-vertTripletStarts: Int -> List a -> List Int
-vertTripletStarts n grid =
-    []
+firstVerticalTriplet: (List a ->Bool) -> List a -> Maybe Int
+firstVerticalTriplet predicate grid =
+    List.range 0 (gridSize - 1) -- cols
+        |> List.filterMap (\col ->
+                let
+                    indices = List.range 0 (gridSize - 3) |> List.map (\row -> row*gridSize + col)
+                in
+                    indices
+                          |> List.filter (\i -> List.drop i grid |> List.take 3 |> predicate)
+                          |> List.head)
+           |> List.head
 
 
-findFirstTriplet : (a -> a -> a -> Bool) -> Int -> List a -> Maybe ( List a, Int )
-findFirstTriplet predicate n grid =
+horizTriplets: List a -> List (List a)
+horizTriplets grid =
+    let (_,result,_) =
+            grid
+            |> List.foldl (\a (i,b,t) ->
+                            if i // gridSize * gridSize <= gridSize - 3 then
+                                if List.length t < 2 then
+                                    (i+1, b, a::t)
+                                else
+                                    (i+1, List.reverse (a::t)::b, [])
+                            else
+                                (i+1, b, [])) (0,[],[])
+    in
+        result
+
+findFirstHorizTriplet : (List a -> Bool) -> Int -> List a -> Maybe ( List a, Int )
+findFirstHorizTriplet predicate n grid =
     let
         starts = horzTripletStarts n grid
         checkStart i =
@@ -225,13 +251,9 @@ findFirstTriplet predicate n grid =
                     List.drop i grid
                         |> List.take 3
             in
-            case triplet of
-                [ a, b, c ] ->
-                    if predicate a b c then
-                        Just ( triplet, i )
-                    else
-                        Nothing
-                _ ->
+                if predicate triplet then
+                    Just (triplet, i)
+                else
                     Nothing
     in
     List.filterMap checkStart starts
@@ -239,13 +261,13 @@ findFirstTriplet predicate n grid =
 
 removeEquations: Model -> Model
 removeEquations model =
-    let predicate: Maybe Tile -> Maybe Tile -> Maybe Tile -> Bool
-        predicate t1 t2 t3 =
-            case (t1,t2,t3) of
-                (Just a, Just b, Just c) -> isValidEquation a.value b.value c.value
-                _ -> False
+    let predicate: List (Maybe Tile)->Bool
+        predicate tiles =
+            tiles
+                |> List.map (\t -> Maybe.map (\v -> v.value) t )
+                |> isValidEquation
     in
-    case findFirstTriplet predicate gridSize model.tiles of
+    case findFirstHorizTriplet predicate gridSize model.tiles of
         Just (_, index) ->
             let removeTriplet :Bool-> Int -> Model -> Model
                 removeTriplet falls pos m =
@@ -261,7 +283,12 @@ removeEquations model =
             in
                 positionsAbove gridSize index
                     |> List.foldl (\i m -> removeTriplet True i m) (removeTriplet False index model)
-        Nothing -> model
+        Nothing ->
+            case firstVerticalTriplet predicate model.tiles of
+                Just index ->
+
+                    model
+                _ -> model
 
 positionsAbove: Int -> Int -> List Int
 positionsAbove n i =
