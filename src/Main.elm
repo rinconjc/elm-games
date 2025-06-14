@@ -218,13 +218,18 @@ firstVerticalTriplet predicate grid =
     List.range 0 (gridSize - 1) -- cols
         |> List.filterMap (\col ->
                 let
-                    indices = List.range 0 (gridSize - 3) |> List.map (\row -> row*gridSize + col)
+                    indices = List.range 0 (gridSize - 1) |> List.map (\row -> row*gridSize + col)
+                    rowValues = indices
+                          |> List.filterMap (\i -> List.drop i grid |> List.head |> Maybe.map (\t -> (i,t))) --[(0,r0) (1,r1), (2,r3), ... (4,r5)]
                 in
-                    indices
-                          |> List.filter (\i -> List.drop i grid |> List.head )
-                          |> List.take 3
-                          |> List.filterMap identity
-                          |> predicate
+                    List.range 0 (gridSize - 3) -- start indexes
+                          |> List.filterMap (\i ->
+                                                 let triplet = rowValues|>List.drop i |>List.take 3|> List.map Tuple.second
+                                                 in
+                                                     if predicate triplet then
+                                                         Just (i*gridSize + col)
+                                                     else
+                                                         Nothing)
                           |> List.head)
            |> List.head
 
@@ -270,23 +275,23 @@ removeEquations model =
                 |> List.map (\t -> Maybe.map (\v -> v.value) t )
                 |> isValidEquation
     in
-    -- case findFirstHorizTriplet predicate gridSize model.tiles of
-    --     Just (_, index) ->
-    --         let removeTriplet :Bool-> Int -> Model -> Model
-    --             removeTriplet falls pos m =
-    --                 let before = List.take pos m.tiles
-    --                     triplet = List.drop pos m.tiles |> List.take 3 |> List.filterMap identity
-    --                     after = List.drop (pos+3) m.tiles
-    --                     newmodel = {m | tiles = before ++ [Nothing, Nothing, Nothing] ++ after }
-    --                 in
-    --                     if falls then
-    --                         {newmodel | fallingTiles = newmodel.fallingTiles ++ triplet}
-    --                     else
-    --                         newmodel
-    --         in
-    --             positionsAbove gridSize index
-    --                 |> List.foldl (\i m -> removeTriplet True i m) (removeTriplet False index model)
-    --     Nothing ->
+    case findFirstHorizTriplet predicate gridSize model.tiles of
+        Just (_, index) ->
+            let removeTriplet :Bool-> Int -> Model -> Model
+                removeTriplet falls pos m =
+                    let before = List.take pos m.tiles
+                        triplet = List.drop pos m.tiles |> List.take 3 |> List.filterMap identity
+                        after = List.drop (pos+3) m.tiles
+                        newmodel = {m | tiles = before ++ [Nothing, Nothing, Nothing] ++ after }
+                    in
+                        if falls then
+                            {newmodel | fallingTiles = newmodel.fallingTiles ++ triplet}
+                        else
+                            newmodel
+            in
+                positionsAbove gridSize index
+                    |> List.foldl (\i m -> removeTriplet True i m) (removeTriplet False index model)
+        Nothing ->
             case firstVerticalTriplet predicate model.tiles of
                 Just index ->
                     let (tiles, falling) =
