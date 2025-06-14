@@ -136,7 +136,7 @@ updateFallingTiles model =
                 updateTiles fallings m =
                     case fallings of
                         tile::rest ->
-                            let top = tile.top - 0.80
+                            let top = tile.top - 0.30
                                 rowBelow = floor ((tile.top - 3.0)/tileSideOut)
                             in
                             if top <0 || isOccupied tile.col rowBelow m.tiles then
@@ -221,7 +221,10 @@ firstVerticalTriplet predicate grid =
                     indices = List.range 0 (gridSize - 3) |> List.map (\row -> row*gridSize + col)
                 in
                     indices
-                          |> List.filter (\i -> List.drop i grid |> List.take 3 |> predicate)
+                          |> List.filter (\i -> List.drop i grid |> List.head )
+                          |> List.take 3
+                          |> List.filterMap identity
+                          |> predicate
                           |> List.head)
            |> List.head
 
@@ -235,7 +238,7 @@ horizTriplets grid =
                                 if List.length t < 2 then
                                     (i+1, b, a::t)
                                 else
-                                    (i+1, List.reverse (a::t)::b, [])
+                                    (i+1, (a::t)::b, [])
                             else
                                 (i+1, b, [])) (0,[],[])
     in
@@ -267,27 +270,39 @@ removeEquations model =
                 |> List.map (\t -> Maybe.map (\v -> v.value) t )
                 |> isValidEquation
     in
-    case findFirstHorizTriplet predicate gridSize model.tiles of
-        Just (_, index) ->
-            let removeTriplet :Bool-> Int -> Model -> Model
-                removeTriplet falls pos m =
-                    let before = List.take pos m.tiles
-                        triplet = List.drop pos m.tiles |> List.take 3 |> List.filterMap identity
-                        after = List.drop (pos+3) m.tiles
-                        newmodel = {m | tiles = before ++ [Nothing, Nothing, Nothing] ++ after }
-                    in
-                        if falls then
-                            {newmodel | fallingTiles = newmodel.fallingTiles ++ triplet}
-                        else
-                            newmodel
-            in
-                positionsAbove gridSize index
-                    |> List.foldl (\i m -> removeTriplet True i m) (removeTriplet False index model)
-        Nothing ->
+    -- case findFirstHorizTriplet predicate gridSize model.tiles of
+    --     Just (_, index) ->
+    --         let removeTriplet :Bool-> Int -> Model -> Model
+    --             removeTriplet falls pos m =
+    --                 let before = List.take pos m.tiles
+    --                     triplet = List.drop pos m.tiles |> List.take 3 |> List.filterMap identity
+    --                     after = List.drop (pos+3) m.tiles
+    --                     newmodel = {m | tiles = before ++ [Nothing, Nothing, Nothing] ++ after }
+    --                 in
+    --                     if falls then
+    --                         {newmodel | fallingTiles = newmodel.fallingTiles ++ triplet}
+    --                     else
+    --                         newmodel
+    --         in
+    --             positionsAbove gridSize index
+    --                 |> List.foldl (\i m -> removeTriplet True i m) (removeTriplet False index model)
+    --     Nothing ->
             case firstVerticalTriplet predicate model.tiles of
                 Just index ->
-
-                    model
+                    let (tiles, falling) =
+                            List.range 0 (gridSize - (index // gridSize) - 1)
+                                |> List.foldl (\i (ts, fs) ->
+                                                let
+                                                    pos = i*gridSize + index
+                                                    ts1 = updateTileAt pos Nothing ts
+                                                in
+                                                if i>2 then
+                                                    (ts1, (List.drop pos ts |> List.head |> Maybe.andThen identity)::fs)
+                                                else
+                                                    (ts1, fs))
+                                   (model.tiles, [])
+                    in
+                    {model | tiles = tiles, fallingTiles = (List.filterMap identity falling)}
                 _ -> model
 
 positionsAbove: Int -> Int -> List Int
