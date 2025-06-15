@@ -294,21 +294,27 @@ removeEquations model =
         Nothing ->
             case firstVerticalTriplet predicate model.tiles of
                 Just index ->
-                    let (tiles, falling) =
-                            List.range 0 (gridSize - (index // gridSize) - 1)
-                                |> List.foldl (\i (ts, fs) ->
-                                                let
-                                                    pos = i*gridSize + index
-                                                    ts1 = updateTileAt pos Nothing ts
-                                                in
-                                                if i>2 then
-                                                    (ts1, (List.drop pos ts |> List.head |> Maybe.andThen identity)::fs)
-                                                else
-                                                    (ts1, fs))
-                                   (model.tiles, [])
+                    let (tiles, falling) = releaseTiles index model.tiles
                     in
-                    {model | tiles = tiles, fallingTiles = (List.filterMap identity falling)}
+                    {model | tiles = tiles, fallingTiles = falling}
                 _ -> model
+
+releaseTiles : Int-> List (Maybe Tile) -> (List (Maybe Tile), List Tile)
+releaseTiles index tiles =
+    let (updatedTiles, falling) =
+            List.range 0 (gridSize - (index // gridSize) - 1)
+                |> List.foldl (\i (ts, fs) ->
+                                let
+                                    pos = i*gridSize + index
+                                    ts1 = updateTileAt pos Nothing ts
+                                in
+                                if i>2 then
+                                    (ts1, (List.drop pos ts |> List.head |> Maybe.andThen identity)::fs)
+                                else
+                                    (ts1, fs))
+                    (tiles, [])
+    in
+        (updatedTiles, List.filterMap identity falling)
 
 positionsAbove: Int -> Int -> List Int
 positionsAbove n i =
@@ -327,7 +333,9 @@ updateSwap comp model =
         case model.selectedTile of
             Just selected ->
                 if isAdjacent index selected then
-                    {model | tiles = swap index selected model.tiles
+                    let (tiles, falling) = swap index selected model.tiles
+                    in
+                    {model | tiles = tiles, fallingTiles = model.fallingTiles ++ falling
                     , selectedTile = Nothing}
                 else
                     {model | selectedTile = Nothing}
@@ -347,27 +355,31 @@ isAdjacent i j =
     abs (i - j) == 1 && (i // gridSize) == (j // gridSize) --same row
         || abs (i - j) == gridSize && (modBy gridSize j) == (modBy gridSize i) -- same column
 
-swap : Int -> Int -> List (Maybe Tile) -> List (Maybe Tile)
+swap : Int -> Int -> List (Maybe Tile) -> (List (Maybe Tile), List Tile)
 swap i j tiles =
    let
-       tileAt : Int -> Maybe Tile
-       tileAt x = tiles |> List.drop x |> List.head |> Maybe.andThen identity
-       itile = tileAt i
-       jtile = tileAt j
-       vertical = modBy gridSize i == modBy gridSize j
+    tileAt : Int -> Maybe Tile
+    tileAt x = tiles |> List.drop x |> List.head |> Maybe.andThen identity
+    itile = tileAt i
+    jtile = tileAt j
+    vertical = modBy gridSize i == modBy gridSize j
+    tupleWith x y = (y,x)
    in
        case (itile, jtile, vertical) of
            (Just it, Just jt, _) ->
                tiles
                    |> updateTileAt i (Just {it|value = jt.value})
                    |> updateTileAt j (Just {jt|value = it.value})
+                   |> tupleWith []
 
            (Just it, Nothing, False)  ->
                 tiles
                     |> updateTileAt i Nothing
                     |> updateTileAt j (Just {it|col = modBy gridSize j})
+                    |> releaseTiles (i+gridSize)
            (_, Just jt, False)  ->
                 tiles
                     |> updateTileAt i (Just {jt|col = modBy gridSize i})
                     |> updateTileAt j Nothing
-           _ -> tiles
+                    |> releaseTiles (j+gridSize)
+           _ -> (tiles, [])
