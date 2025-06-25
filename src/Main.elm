@@ -9,6 +9,7 @@ main = game view update initialModel
 
 view : Computer -> Model -> List Shape
 view computer model =
+    viewScore model ::
     viewEmptyGrid
     ++ (model.tiles
        |> List.filterMap identity
@@ -25,8 +26,11 @@ update computer model =
         |> removeEquations
 
 gridSize = 5
-tileSideIn = 40
-tileSideOut = 42
+tileSideIn = 80
+tileSideOut = 82
+dropDelta = 1
+matchScore = 1000
+swapScore = -10
 
 
 type alias TileTheme = {
@@ -73,6 +77,10 @@ viewSelectedTile model =
                           _ -> []
         _ -> []
 
+viewScore : Model -> Shape
+viewScore  model =
+    group [ words black ("Score:" ++ (String.fromInt model.score)) ] |> move (gridSize*tileSideOut + 30) ((gridSize - 1) * tileSideOut)
+
 -- Generate a random integer between min and max (inclusive)
 randomDigitGen = Random.int 1 9
 randomColGen = Random.int 0 4
@@ -93,18 +101,25 @@ emptyGrid =
 
 type alias FallingTile = {value:Int, col:Int, row:Int, offset:Float}
 
+
+type GameStatus = Initial | Running | Paused | Finished
+
 type alias Model =
     { tiles: List (Maybe Tile)
     , fallingTiles: List Tile
     , seed : Random.Seed
-    , selectedTile: Maybe Int}
+    , selectedTile: Maybe Int
+    , score : Int
+    , status: GameStatus }
     
 initialModel: Model
 initialModel =
         {tiles = List.repeat (gridSize*gridSize) Nothing
         , fallingTiles = []
         , seed = Random.initialSeed 17
-        , selectedTile = Nothing}
+        , selectedTile = Nothing
+        , score = 0
+        , status = Initial}
 
 updateSeed : Computer -> Model -> Model
 updateSeed computer model =
@@ -136,7 +151,7 @@ updateFallingTiles model =
                 updateTiles fallings m =
                     case fallings of
                         tile::rest ->
-                            let top = tile.top - 0.30
+                            let top = tile.top - dropDelta
                                 rowBelow = floor ((tile.top - 3.0)/tileSideOut)
                             in
                             if top <0 || isOccupied tile.col rowBelow m.tiles then
@@ -290,7 +305,7 @@ removeEquations model =
                             newmodel
             in
                 positionsAbove gridSize index
-                    |> List.foldl (\i m -> removeTriplet True i m) (removeTriplet False index model)
+                    |> List.foldl (\i m -> removeTriplet True i m) (removeTriplet False index {model|score = model.score+matchScore})
         Nothing ->
             case firstVerticalTriplet predicate model.tiles of
                 Just index ->
@@ -307,7 +322,7 @@ removeEquations model =
                                                     (ts1, fs))
                                    (model.tiles, [])
                     in
-                    {model | tiles = tiles, fallingTiles = (List.filterMap identity falling)}
+                    {model | tiles = tiles, fallingTiles = (List.filterMap identity falling), score = model.score+matchScore}
                 _ -> model
 
 releaseTiles : Int-> List (Maybe Tile) -> (List (Maybe Tile), List Tile)
