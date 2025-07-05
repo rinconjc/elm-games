@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Browser
+import Html.Styled exposing (toUnstyled)
 import Model exposing (Model, initialModel)
 import Msg exposing (Msg)
 import Subscriptions exposing (subscriptions)
@@ -14,7 +15,7 @@ main =
         { init = init
         , update = update
         , subscriptions = subscriptions
-        , view = view
+        , view = view >> toUnstyled
         }
 
 

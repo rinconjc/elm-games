@@ -1,27 +1,21 @@
 module View exposing (view)
 
-import Html exposing (Html, button, div, h1, text)
-import Html.Attributes exposing (class, style)
-import Html.Events exposing (onClick)
-import Model exposing (Model, GameState(..))
+import Html.Styled exposing (Html, button, div, h1, text)
+import Html.Styled.Attributes exposing (class)
+import Html.Styled.Events exposing (onClick)
+import Model exposing (GameState(..), Model)
 import Msg exposing (Msg(..))
-import Svg exposing (Svg, g, rect, svg, text_)
-import Svg.Attributes exposing (width, height,viewBox)
-import Utils.Tile exposing (render)
+import Svg.Styled exposing (Svg, svg)
+import Svg.Styled.Attributes exposing (css, height, viewBox, width)
 import Utils.Grid as Grid
-import Utils.Tile exposing (Tile)
-import Svg.Attributes exposing (transform)
-import Svg.Attributes exposing (fill)
-import Svg.Attributes exposing (stroke)
-import Svg.Attributes exposing (x)
-import Svg.Attributes exposing (y)
-import Svg.Attributes exposing (textAnchor)
+import Utils.Styles
+import Utils.Tile exposing (render)
 
 
 view : Model -> Html Msg
 view model =
-    div [ class "game-container" ]
-        [ h1 [] [ text "Sum-Swap" ]
+    div [ css Utils.Styles.container ]
+        [ h1 [ class "title" ] [ text "Sum-Swap" ]
         , div [ class "game-controls" ]
             [ viewGameControls model.gameState
             , div [ class "score" ] [ text ("Score: " ++ String.fromInt model.score) ]
@@ -63,10 +57,9 @@ renderGame model =
             400 // model.gridSize
 
         gridCells =
-            Grid.render model.grid cellSize model.selectedTile
+            Grid.render model.grid cellSize model.drag
 
         fallingTiles =
             List.map (render cellSize) model.currentTiles
     in
     gridCells ++ fallingTiles
-

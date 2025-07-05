@@ -1,8 +1,8 @@
-module Model exposing (Model, initialModel, GameState(..))
+module Model exposing (GameState(..), Model, initialModel)
 
 import Array exposing (Array)
+import Utils.Grid as Grid exposing (Drag)
 import Utils.Tile exposing (Tile)
-import Utils.Grid as Grid
 
 
 type alias Model =
@@ -12,6 +12,7 @@ type alias Model =
     , score : Int
     , gameState : GameState
     , selectedTile : Maybe ( Int, Int )
+    , drag : Maybe Drag
     }
 
 
@@ -23,10 +24,11 @@ type GameState
 
 initialModel : Model
 initialModel =
-    { gridSize =5
+    { gridSize = 5
     , grid = Grid.empty 5
     , currentTiles = []
     , score = 0
     , gameState = Playing
     , selectedTile = Nothing
+    , drag = Nothing
     }

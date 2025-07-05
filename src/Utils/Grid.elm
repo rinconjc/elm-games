@@ -1,10 +1,18 @@
-module Utils.Grid exposing (Grid, empty, getCell, setCell, isCellOccupied, addTiles, swapTiles, render, isFull)
+module Utils.Grid exposing (Drag, Grid, addTiles, empty, getCell, isCellOccupied, isFull, render, setCell, swapTiles)
 
 import Array exposing (Array)
-import Svg exposing (Svg, g, rect, text_)
-import Svg.Attributes exposing (..)
-import Utils.Tile exposing (Tile)
-import Svg exposing (text)
+import Json.Decode as Decode
+import Msg exposing (Msg(..))
+import Svg.Styled exposing (Svg, g, rect, text, text_)
+import Svg.Styled.Attributes exposing (..)
+import Svg.Styled.Events as SE
+import Utils.Styles
+
+
+type alias Drag =
+    { cell : ( Int, Int )
+    , currentPos : ( Int, Int )
+    }
 
 
 type alias Grid =
@@ -23,7 +31,7 @@ getCell grid x y =
         |> Maybe.andThen identity
 
 
-setCell :  Int -> Int -> Maybe Int -> Grid -> Grid
+setCell : Int -> Int -> Maybe Int -> Grid -> Grid
 setCell x y value grid =
     case Array.get y grid of
         Just row ->
@@ -57,73 +65,95 @@ swapTiles grid ( x1, y1 ) ( x2, y2 ) =
         val2 =
             getCell grid x2 y2
     in
-        grid
-            |> setCell x1 y1 val2
-            |> setCell x2 y2 val1
+    grid
+        |> setCell x1 y1 val2
+        |> setCell x2 y2 val1
 
 
 isFull : Grid -> Bool
 isFull grid =
-        case Array.get 0 grid of
-            Just topRow ->
-                topRow |> Array.filter ((==) Nothing)
-                       |> Array.isEmpty
-            _ -> False
+    case Array.get 0 grid of
+        Just topRow ->
+            topRow
+                |> Array.filter ((==) Nothing)
+                |> Array.isEmpty
+
+        _ ->
+            False
 
 
-render : Grid -> Int -> Maybe ( Int, Int ) -> List (Svg msg)
-render grid cellSize selectedTile =
+render : Grid -> Int -> Maybe Drag -> List (Svg Msg)
+render grid cellSize drag =
     let
         size =
             Array.length grid
     in
     List.concatMap
         (\y_ ->
-            List.map
-                (\x_ ->
-                    let
-                        cellValue =
-                            getCell grid x_ y_
-
-                        ( fillColor, textColor ) =
-                            case selectedTile of
-                                Just ( selectedX, selectedY ) ->
-                                    if x_ == selectedX && y_ == selectedY then
-                                        ( "#ff0", "#000" )
-                                    else
-                                        ( "#fff", "#000" )
-
-                                Nothing ->
-                                    ( "#fff", "#000" )
-                    in
-                    g []
-                        [ rect
-                            [ x (String.fromInt (x_ * cellSize))
-                            , y (String.fromInt (y_ * cellSize))
-                            , width (String.fromInt cellSize)
-                            , height (String.fromInt cellSize)
-                            , fill fillColor
-                            , stroke "#000"
-                            , strokeWidth "1"
-                            ]
-                            []
-                        , case cellValue of
-                            Just value ->
-                                text_
-                                    [ x (String.fromInt (x_ * cellSize + cellSize // 2))
-                                    , y (String.fromInt (y_ * cellSize + cellSize // 2))
-                                    , textAnchor "middle"
-                                    , dominantBaseline "middle"
-                                    , fill textColor
-                                    , fontSize (String.fromInt (cellSize // 2))
-                                    ]
-                                    [ Svg.text (String.fromInt value) ]
-
-                            Nothing ->
-                                Svg.text ""
-                        ]
-                )
+            List.map (\x_ -> renderCell x_ y_ cellSize grid drag)
                 (List.range 0 (size - 1))
         )
         (List.range 0 (size - 1))
 
+
+renderCell : Int -> Int -> Int -> Grid -> Maybe Drag -> Svg Msg
+renderCell x_ y_ cellSize grid drag =
+    let
+        cellValue =
+            getCell grid x_ y_
+
+        ( cellStyle, textStyle ) =
+            case drag of
+                Just { cell, currentPos } ->
+                    if cell == ( x_, y_ ) || ( x_, y_ ) == currentPos then
+                        ( Utils.Styles.cellActive, Utils.Styles.cellText )
+
+                    else
+                        ( Utils.Styles.cell, Utils.Styles.cellText )
+
+                Nothing ->
+                    ( Utils.Styles.cell, Utils.Styles.cellText )
+
+        cellAttrs =
+            [ x (String.fromInt (x_ * cellSize))
+            , y (String.fromInt (y_ * cellSize))
+            , width (String.fromInt cellSize)
+            , height (String.fromInt cellSize)
+
+            -- , stroke "#aaa"
+            -- , css cellStyle
+            , strokeWidth "1"
+            ]
+    in
+    case cellValue of
+        Just value ->
+            -- let style = if
+            g
+                [ SE.on "mousedown" (Decode.succeed (DragStart x_ y_))
+                , SE.on "mouseup" (Decode.succeed Drop)
+
+                -- , SE.on "mouseleave" (Decode.succeed DragEnd)
+                , SE.on "mouseenter" (Decode.succeed (DragOver x_ y_))
+                , css cellStyle
+                ]
+                [ rect cellAttrs []
+                , text_
+                    [ x (String.fromInt (x_ * cellSize + cellSize // 2))
+                    , y (String.fromInt (y_ * cellSize + cellSize // 2))
+                    , textAnchor "middle"
+                    , dominantBaseline "middle"
+                    , css textStyle
+
+                    -- , fill textColor
+                    , fontSize (String.fromInt (cellSize // 2))
+                    ]
+                    [ text (String.fromInt value) ]
+                ]
+
+        Nothing ->
+            g
+                [ SE.on "mouseenter" (Decode.succeed (DragOver x_ y_))
+                , SE.on "mouseup" (Decode.succeed Drop)
+                , css Utils.Styles.emptyCell
+                ]
+                [ rect cellAttrs [ text "" ] ]

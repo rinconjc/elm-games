@@ -4,7 +4,7 @@ import Time
 
 
 type Msg
-    = NewTiles (List Int, List Int)
+    = NewTiles ( List Int, List Int )
     | Tick Time.Posix
     | SelectTile Int Int
     | SwapTiles ( Int, Int ) ( Int, Int )
@@ -12,3 +12,7 @@ type Msg
     | Pause
     | Resume
     | Restart
+    | DragStart Int Int
+    | DragEnd
+    | DragOver Int Int
+    | Drop

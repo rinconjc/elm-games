@@ -1,7 +1,8 @@
 module Utils.Tile exposing (Tile, create, render)
 
-import Svg exposing (Svg, g, rect , text_)
-import Svg.Attributes exposing (..)
+import Svg.Styled exposing (Svg, g, rect, text, text_)
+import Svg.Styled.Attributes exposing (..)
+import Utils.Styles
 
 
 type alias Tile =
@@ -21,19 +22,20 @@ create value x y =
 
 render : Int -> Tile -> Svg msg
 render cellSize tile =
-    let cellSizef = toFloat cellSize
+    let
+        cellSizef =
+            toFloat cellSize
     in
- -- transform ("translate(" ++ String.fromFloat (tile.x * cellSizef) ++
- --                 "," ++ String.fromFloat (tile.y * cellSizef) ++ ")")
-    g [
-      ]
+    g
+        [-- transform ("translate(" ++ String.fromFloat (tile.x * cellSizef) ++
+         --             "," ++ String.fromFloat (tile.y * cellSizef) ++ ")")
+        ]
         [ rect
             [ x (String.fromFloat (tile.x * cellSizef))
             , y (String.fromFloat (tile.y * cellSizef))
             , width (String.fromInt cellSize)
             , height (String.fromInt cellSize)
-            , fill "#fff"
-            , stroke "#000"
+            , css Utils.Styles.cell
             , strokeWidth "1"
             ]
             []
@@ -42,8 +44,8 @@ render cellSize tile =
             , y (String.fromFloat (tile.y * cellSizef + cellSizef / 2))
             , textAnchor "middle"
             , dominantBaseline "middle"
-            , fill "#000"
+            , css Utils.Styles.cellText
             , fontSize (String.fromInt (cellSize // 2))
             ]
-            [ Svg.text (String.fromInt tile.value) ]
+            [ text (String.fromInt tile.value) ]
         ]
