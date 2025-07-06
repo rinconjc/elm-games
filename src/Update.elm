@@ -29,13 +29,6 @@ update msg model =
         SelectTile x y ->
             handleTileSelection model x y
 
-        SwapTiles pos1 pos2 ->
-            if model.gameState == Playing then
-                handleSwap model pos1 pos2
-
-            else
-                ( model, Cmd.none )
-
         RemoveTriplets positions ->
             removeMatchedTiles model positions
 
@@ -56,35 +49,27 @@ update msg model =
                 ( model, Cmd.none )
 
         DragOver x y ->
-            if model.gameState == Playing then
-                case model.drag of
-                    Just drag ->
-                        if isAdjacent drag.cell ( x, y ) then
-                            ( { model | drag = Just { drag | currentPos = ( x, y ) } }, Cmd.none )
+            case ( model.gameState, model.drag ) of
+                ( Playing, Just drag ) ->
+                    if isAdjacent drag.cell ( x, y ) then
+                        ( { model | drag = Just { drag | currentPos = ( x, y ) } }, Cmd.none )
 
-                        else
-                            ( { model | drag = Just { drag | currentPos = drag.cell } }, Cmd.none )
+                    else
+                        ( { model | drag = Just { drag | currentPos = drag.cell } }, Cmd.none )
 
-                    _ ->
-                        ( model, Cmd.none )
-
-            else
-                ( model, Cmd.none )
+                _ ->
+                    ( model, Cmd.none )
 
         DragEnd ->
             ( { model | drag = Nothing }, Cmd.none )
 
         Drop ->
-            if model.gameState == Playing then
-                case model.drag of
-                    Just drag ->
-                        handleSwap { model | drag = Nothing } drag.cell drag.currentPos
+            case ( model.gameState, model.drag ) of
+                ( Playing, Just drag ) ->
+                    handleSwap { model | drag = Nothing } drag.cell drag.currentPos
 
-                    _ ->
-                        ( model, Cmd.none )
-
-            else
-                ( model, Cmd.none )
+                _ ->
+                    ( model, Cmd.none )
 
 
 spawnNewTiles : Model -> ( List Int, List Int ) -> ( Model, Cmd Msg )
