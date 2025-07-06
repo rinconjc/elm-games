@@ -1,4 +1,4 @@
-module Utils.Grid exposing (Drag, Grid, addTiles, empty, getCell, isCellOccupied, isFull, render, setCell, swapTiles)
+module Utils.Grid exposing (Drag, Grid, addTiles, empty, getCell, isCellOccupied, isFull, release, render, setCell, swapTiles)
 
 import Array exposing (Array)
 import Json.Decode as Decode
@@ -7,6 +7,7 @@ import Svg.Styled exposing (Svg, g, rect, text, text_)
 import Svg.Styled.Attributes exposing (..)
 import Svg.Styled.Events as SE
 import Utils.Styles
+import Utils.Tile exposing (Tile, create)
 
 
 type alias Drag =
@@ -157,3 +158,31 @@ renderCell x_ y_ cellSize grid drag =
                 , css Utils.Styles.emptyCell
                 ]
                 [ rect cellAttrs [ text "" ] ]
+
+
+release : Grid -> ( Int, Int ) -> ( Int, Int ) -> ( Int, Int ) -> ( Grid, List Tile )
+release grid ( x, y ) ( x1, y1 ) ( x2, y2 ) =
+    -- horizontal
+    if y == y2 then
+        ( grid, [] )
+            |> release_ ( x, y )
+            |> release_ ( x1, y1 )
+            |> release_ ( x2, y2 )
+        -- vertical
+
+    else
+        release_ ( x, y ) ( grid, [] )
+
+
+release_ : ( Int, Int ) -> ( Grid, List Tile ) -> ( Grid, List Tile )
+release_ ( x, y ) ( grid, tiles ) =
+    if y == 0 then
+        ( grid, tiles )
+
+    else
+        case getCell grid x (y - 1) of
+            Just v ->
+                release_ ( x, y - 1 ) ( grid |> setCell x (y - 1) Nothing, create v (toFloat x) (toFloat (y - 1)) :: tiles )
+
+            Nothing ->
+                ( grid, tiles )

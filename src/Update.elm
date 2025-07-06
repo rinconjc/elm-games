@@ -6,7 +6,7 @@ import Platform.Cmd as Cmd
 import Random
 import Utils.Grid as Grid exposing (getCell, isFull, setCell)
 import Utils.Tile as Tile exposing (Tile)
-import Utils.Triplet as Triplet
+import Utils.Triplet as Triplet exposing (findMatch)
 
 
 fallInc =
@@ -144,7 +144,7 @@ handleLanding model landedTiles =
         updatedGrid =
             Grid.addTiles model.grid snappedTiles
     in
-    ( { model | grid = updatedGrid }, Cmd.none )
+    ( handleMatches { model | grid = updatedGrid }, Cmd.none )
 
 
 handleTileSelection : Model -> Int -> Int -> ( Model, Cmd Msg )
@@ -172,24 +172,33 @@ handleSwap model ( x1, y1 ) ( x2, y2 ) =
                             |> setCell x1 y1 (Just v2)
                             |> setCell x2 y2 (Just v1)
                 in
-                ( { model | grid = updatedGrid }, Cmd.none )
+                ( handleMatches { model | grid = updatedGrid }, Cmd.none )
 
             _ ->
                 ( model, Cmd.none )
-        -- matchedPositions =
-        --     Triplet.findMatches updatedGrid
-        -- if List.isEmpty matchedPositions then
-        --     ( { model | grid = Grid.swapTiles updatedGrid ( x1, y1 ) ( x2, y2 ) }, Cmd.none )
-        -- else
-        --     ( { model
-        --         | grid = updatedGrid
-        --         , score = model.score + List.length matchedPositions * 10
-        --       }
-        --     , Cmd.none
-        --     )
 
     else
         ( model, Cmd.none )
+
+
+handleMatches : Model -> Model
+handleMatches model =
+    case findMatch model.grid of
+        Just [ ( x, y ), ( x1, y1 ), ( x2, y2 ) ] ->
+            let
+                score =
+                    getCell model.grid x2 y2 |> Maybe.withDefault 0
+
+                grid_ =
+                    model.grid |> setCell x y Nothing |> setCell x1 y1 Nothing |> setCell x2 y2 Nothing
+
+                ( grid2, tiles_ ) =
+                    Grid.release grid_ ( x, y ) ( x1, y1 ) ( x2, y2 )
+            in
+            { model | grid = grid2, score = model.score + score, currentTiles = model.currentTiles ++ tiles_ }
+
+        _ ->
+            model
 
 
 isAdjacent : ( Int, Int ) -> ( Int, Int ) -> Bool
