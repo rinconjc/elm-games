@@ -6,7 +6,7 @@ import Platform.Cmd as Cmd
 import Random
 import Utils.Grid as Grid exposing (getCell, isFull, setCell)
 import Utils.Tile as Tile exposing (Tile)
-import Utils.Triplet as Triplet exposing (findMatch)
+import Utils.Triplet exposing (findMatch)
 
 
 fallInc =
@@ -30,7 +30,11 @@ update msg model =
             handleTileSelection model x y
 
         SwapTiles pos1 pos2 ->
-            handleSwap model pos1 pos2
+            if model.gameState == Playing then
+                handleSwap model pos1 pos2
+
+            else
+                ( model, Cmd.none )
 
         RemoveTriplets positions ->
             removeMatchedTiles model positions
@@ -45,30 +49,42 @@ update msg model =
             ( Model.initialModel, Cmd.none )
 
         DragStart x y ->
-            ( { model | drag = Just { cell = ( x, y ), currentPos = ( x, y ) } }, Cmd.none )
+            if model.gameState == Playing then
+                ( { model | drag = Just { cell = ( x, y ), currentPos = ( x, y ) } }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
 
         DragOver x y ->
-            case model.drag of
-                Just drag ->
-                    if isAdjacent drag.cell ( x, y ) then
-                        ( { model | drag = Just { drag | currentPos = ( x, y ) } }, Cmd.none )
+            if model.gameState == Playing then
+                case model.drag of
+                    Just drag ->
+                        if isAdjacent drag.cell ( x, y ) then
+                            ( { model | drag = Just { drag | currentPos = ( x, y ) } }, Cmd.none )
 
-                    else
-                        ( { model | drag = Just { drag | currentPos = drag.cell } }, Cmd.none )
+                        else
+                            ( { model | drag = Just { drag | currentPos = drag.cell } }, Cmd.none )
 
-                _ ->
-                    ( model, Cmd.none )
+                    _ ->
+                        ( model, Cmd.none )
+
+            else
+                ( model, Cmd.none )
 
         DragEnd ->
             ( { model | drag = Nothing }, Cmd.none )
 
         Drop ->
-            case model.drag of
-                Just drag ->
-                    handleSwap { model | drag = Nothing } drag.cell drag.currentPos
+            if model.gameState == Playing then
+                case model.drag of
+                    Just drag ->
+                        handleSwap { model | drag = Nothing } drag.cell drag.currentPos
 
-                _ ->
-                    ( model, Cmd.none )
+                    _ ->
+                        ( model, Cmd.none )
+
+            else
+                ( model, Cmd.none )
 
 
 spawnNewTiles : Model -> ( List Int, List Int ) -> ( Model, Cmd Msg )
@@ -82,8 +98,9 @@ spawnNewTiles model ( values, columns ) =
                 )
                 values
                 columns
+                |> List.filter (\t -> getCell model.grid (floor t.x) 0 == Nothing)
     in
-    ( { model | currentTiles = newTiles }
+    ( { model | currentTiles = model.currentTiles ++ newTiles }
     , Cmd.none
     )
 
