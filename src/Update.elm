@@ -49,6 +49,10 @@ update msg model =
                 ( model, Cmd.none )
 
         DragOver x y ->
+            let
+                _ =
+                    Debug.log "drag-over: " ( x, y )
+            in
             case ( model.gameState, model.drag ) of
                 ( Playing, Just drag ) ->
                     if isAdjacent drag.cell ( x, y ) then

@@ -6911,6 +6911,7 @@ var $author$project$Update$handleTileSelection = F3(
 				$elm$core$Platform$Cmd$none);
 		}
 	});
+var $elm$core$Debug$log = _Debug_log;
 var $author$project$Model$GameOver = {$: 'GameOver'};
 var $author$project$Update$fallInc = 0.01;
 var $author$project$Msg$NewTiles = function (a) {
@@ -7393,10 +7394,14 @@ var $author$project$Update$update = F2(
 			case 'DragOver':
 				var x = msg.a;
 				var y = msg.b;
-				var _v1 = _Utils_Tuple2(model.gameState, model.drag);
-				if ((_v1.a.$ === 'Playing') && (_v1.b.$ === 'Just')) {
-					var _v2 = _v1.a;
-					var drag = _v1.b.a;
+				var _v1 = A2(
+					$elm$core$Debug$log,
+					'drag-over: ',
+					_Utils_Tuple2(x, y));
+				var _v2 = _Utils_Tuple2(model.gameState, model.drag);
+				if ((_v2.a.$ === 'Playing') && (_v2.b.$ === 'Just')) {
+					var _v3 = _v2.a;
+					var drag = _v2.b.a;
 					return A2(
 						$author$project$Update$isAdjacent,
 						drag.cell,
@@ -7431,10 +7436,10 @@ var $author$project$Update$update = F2(
 						{drag: $elm$core$Maybe$Nothing}),
 					$elm$core$Platform$Cmd$none);
 			default:
-				var _v3 = _Utils_Tuple2(model.gameState, model.drag);
-				if ((_v3.a.$ === 'Playing') && (_v3.b.$ === 'Just')) {
-					var _v4 = _v3.a;
-					var drag = _v3.b.a;
+				var _v4 = _Utils_Tuple2(model.gameState, model.drag);
+				if ((_v4.a.$ === 'Playing') && (_v4.b.$ === 'Just')) {
+					var _v5 = _v4.a;
+					var drag = _v4.b.a;
 					return A3(
 						$author$project$Update$handleSwap,
 						_Utils_update(
@@ -9135,7 +9140,9 @@ var $rtfeldman$elm_css$VirtualDom$Styled$attribute = F2(
 			'');
 	});
 var $rtfeldman$elm_css$Svg$Styled$Attributes$height = $rtfeldman$elm_css$VirtualDom$Styled$attribute('height');
+var $rtfeldman$elm_css$Html$Styled$Attributes$name = $rtfeldman$elm_css$Html$Styled$Attributes$stringProperty('name');
 var $rtfeldman$elm_css$Html$Styled$p = $rtfeldman$elm_css$Html$Styled$node('p');
+var $rtfeldman$elm_css$Html$Styled$Attributes$property = $rtfeldman$elm_css$VirtualDom$Styled$property;
 var $author$project$Msg$DragOver = F2(
 	function (a, b) {
 		return {$: 'DragOver', a: a, b: b};
@@ -9643,11 +9650,25 @@ var $author$project$Utils$Grid$renderCell = F5(
 							A2($author$project$Msg$DragStart, x_, y_))),
 						A2(
 						$rtfeldman$elm_css$Svg$Styled$Events$on,
+						'touchstart',
+						$elm$json$Json$Decode$succeed(
+							A2($author$project$Msg$DragStart, x_, y_))),
+						A2(
+						$rtfeldman$elm_css$Svg$Styled$Events$on,
 						'mouseup',
 						$elm$json$Json$Decode$succeed($author$project$Msg$Drop)),
 						A2(
 						$rtfeldman$elm_css$Svg$Styled$Events$on,
+						'touchend',
+						$elm$json$Json$Decode$succeed($author$project$Msg$Drop)),
+						A2(
+						$rtfeldman$elm_css$Svg$Styled$Events$on,
 						'mouseenter',
+						$elm$json$Json$Decode$succeed(
+							A2($author$project$Msg$DragOver, x_, y_))),
+						A2(
+						$rtfeldman$elm_css$Svg$Styled$Events$on,
+						'touchmove',
 						$elm$json$Json$Decode$succeed(
 							A2($author$project$Msg$DragOver, x_, y_))),
 						$rtfeldman$elm_css$Svg$Styled$Attributes$css(cellStyle)
@@ -9687,7 +9708,16 @@ var $author$project$Utils$Grid$renderCell = F5(
 							A2($author$project$Msg$DragOver, x_, y_))),
 						A2(
 						$rtfeldman$elm_css$Svg$Styled$Events$on,
+						'touchmove',
+						$elm$json$Json$Decode$succeed(
+							A2($author$project$Msg$DragOver, x_, y_))),
+						A2(
+						$rtfeldman$elm_css$Svg$Styled$Events$on,
 						'mouseup',
+						$elm$json$Json$Decode$succeed($author$project$Msg$Drop)),
+						A2(
+						$rtfeldman$elm_css$Svg$Styled$Events$on,
+						'touchend',
 						$elm$json$Json$Decode$succeed($author$project$Msg$Drop)),
 						$rtfeldman$elm_css$Svg$Styled$Attributes$css($author$project$Utils$Styles$emptyCell)
 					]),
@@ -9764,7 +9794,7 @@ var $author$project$Utils$Tile$render = F2(
 				]));
 	});
 var $author$project$View$renderGame = function (model) {
-	var cellSize = (400 / model.gridSize) | 0;
+	var cellSize = (300 / model.gridSize) | 0;
 	var fallingTiles = A2(
 		$elm$core$List$map,
 		$author$project$Utils$Tile$render(cellSize),
@@ -9920,6 +9950,18 @@ var $author$project$View$view = function (model) {
 			]),
 		_List_fromArray(
 			[
+				A3(
+				$rtfeldman$elm_css$Html$Styled$node,
+				'meta',
+				_List_fromArray(
+					[
+						$rtfeldman$elm_css$Html$Styled$Attributes$name('viewport'),
+						A2(
+						$rtfeldman$elm_css$Html$Styled$Attributes$property,
+						'content',
+						$elm$json$Json$Encode$string('width=device-width, initial-scale=1.0'))
+					]),
+				_List_Nil),
 				A2(
 				$rtfeldman$elm_css$Html$Styled$h1,
 				_List_Nil,
@@ -9957,19 +9999,16 @@ var $author$project$View$view = function (model) {
 					])),
 				A2(
 				$rtfeldman$elm_css$Html$Styled$div,
-				_List_fromArray(
-					[
-						$rtfeldman$elm_css$Html$Styled$Attributes$class('game-grid')
-					]),
+				_List_Nil,
 				_List_fromArray(
 					[
 						A2(
 						$rtfeldman$elm_css$Svg$Styled$svg,
 						_List_fromArray(
 							[
-								$rtfeldman$elm_css$Svg$Styled$Attributes$width('400'),
-								$rtfeldman$elm_css$Svg$Styled$Attributes$height('400'),
-								$rtfeldman$elm_css$Svg$Styled$Attributes$viewBox('0 0 400 400')
+								$rtfeldman$elm_css$Svg$Styled$Attributes$width('300'),
+								$rtfeldman$elm_css$Svg$Styled$Attributes$height('300'),
+								$rtfeldman$elm_css$Svg$Styled$Attributes$viewBox('0 0 300 300')
 							]),
 						$author$project$View$renderGame(model))
 					]))

@@ -131,10 +131,13 @@ renderCell x_ y_ cellSize grid drag =
             -- let style = if
             g
                 [ SE.on "mousedown" (Decode.succeed (DragStart x_ y_))
+                , SE.on "touchstart" (Decode.succeed (DragStart x_ y_))
                 , SE.on "mouseup" (Decode.succeed Drop)
+                , SE.on "touchend" (Decode.succeed Drop)
 
                 -- , SE.on "mouseleave" (Decode.succeed DragEnd)
                 , SE.on "mouseenter" (Decode.succeed (DragOver x_ y_))
+                , SE.on "touchmove" (Decode.succeed (DragOver x_ y_))
                 , css cellStyle
                 ]
                 [ rect cellAttrs []
@@ -154,7 +157,9 @@ renderCell x_ y_ cellSize grid drag =
         Nothing ->
             g
                 [ SE.on "mouseenter" (Decode.succeed (DragOver x_ y_))
+                , SE.on "touchmove" (Decode.succeed (DragOver x_ y_))
                 , SE.on "mouseup" (Decode.succeed Drop)
+                , SE.on "touchend" (Decode.succeed Drop)
                 , css Utils.Styles.emptyCell
                 ]
                 [ rect cellAttrs [ text "" ] ]
