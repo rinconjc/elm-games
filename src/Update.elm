@@ -41,18 +41,14 @@ update msg model =
         Restart ->
             ( Model.initialModel, Cmd.none )
 
-        DragStart x y ->
+        DragStart ( x, y ) ->
             if model.gameState == Playing then
                 ( { model | drag = Just { cell = ( x, y ), currentPos = ( x, y ) } }, Cmd.none )
 
             else
                 ( model, Cmd.none )
 
-        DragOver x y ->
-            let
-                _ =
-                    Debug.log "drag-over: " ( x, y )
-            in
+        DragOver ( x, y ) ->
             case ( model.gameState, model.drag ) of
                 ( Playing, Just drag ) ->
                     if isAdjacent drag.cell ( x, y ) then

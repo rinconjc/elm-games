@@ -1,11 +1,10 @@
 module Utils.Grid exposing (Drag, Grid, addTiles, empty, getCell, isCellOccupied, isFull, release, render, setCell, swapTiles)
 
 import Array exposing (Array)
-import Json.Decode as Decode
+import Html.Styled.Attributes exposing (draggable)
 import Msg exposing (Msg(..))
 import Svg.Styled exposing (Svg, g, rect, text, text_)
 import Svg.Styled.Attributes exposing (..)
-import Svg.Styled.Events as SE
 import Utils.Styles
 import Utils.Tile exposing (Tile, create)
 
@@ -128,18 +127,8 @@ renderCell x_ y_ cellSize grid drag =
     in
     case cellValue of
         Just value ->
-            -- let style = if
             g
-                [ SE.on "mousedown" (Decode.succeed (DragStart x_ y_))
-                , SE.on "touchstart" (Decode.succeed (DragStart x_ y_))
-                , SE.on "mouseup" (Decode.succeed Drop)
-                , SE.on "touchend" (Decode.succeed Drop)
-
-                -- , SE.on "mouseleave" (Decode.succeed DragEnd)
-                , SE.on "mouseenter" (Decode.succeed (DragOver x_ y_))
-                , SE.on "touchmove" (Decode.succeed (DragOver x_ y_))
-                , css cellStyle
-                ]
+                [ css cellStyle, draggable "true" ]
                 [ rect cellAttrs []
                 , text_
                     [ x (String.fromInt (x_ * cellSize + cellSize // 2))
@@ -156,11 +145,7 @@ renderCell x_ y_ cellSize grid drag =
 
         Nothing ->
             g
-                [ SE.on "mouseenter" (Decode.succeed (DragOver x_ y_))
-                , SE.on "touchmove" (Decode.succeed (DragOver x_ y_))
-                , SE.on "mouseup" (Decode.succeed Drop)
-                , SE.on "touchend" (Decode.succeed Drop)
-                , css Utils.Styles.emptyCell
+                [ css Utils.Styles.emptyCell
                 ]
                 [ rect cellAttrs [ text "" ] ]
 

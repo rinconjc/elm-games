@@ -11,7 +11,7 @@ type Msg
     | Pause
     | Resume
     | Restart
-    | DragStart Int Int
+    | DragStart ( Int, Int )
     | DragEnd
-    | DragOver Int Int
+    | DragOver ( Int, Int )
     | Drop

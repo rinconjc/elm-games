@@ -1,13 +1,16 @@
 module View exposing (view)
 
+import Css exposing (none, touchAction)
 import Html.Styled exposing (Html, div, h1, h3, node, p, text)
 import Html.Styled.Attributes exposing (class, name, property)
 import Html.Styled.Events exposing (onClick)
+import Json.Decode as Decode exposing (field, float)
 import Json.Encode as Encode
 import Model exposing (GameState(..), Model)
 import Msg exposing (Msg(..))
 import Svg.Styled exposing (Svg, svg)
 import Svg.Styled.Attributes exposing (css, height, viewBox, width)
+import Svg.Styled.Events as SE
 import Utils.Grid as Grid
 import Utils.Styles exposing (sButton, sH2)
 import Utils.Tile exposing (render)
@@ -15,6 +18,10 @@ import Utils.Tile exposing (render)
 
 view : Model -> Html Msg
 view model =
+    let
+        offsetXY =
+            offsetDecode (gridSize // model.gridSize)
+    in
     div [ css Utils.Styles.container ]
         [ node "meta"
             [ name "viewport"
@@ -29,13 +36,32 @@ view model =
             ]
         , div []
             [ svg
-                [ width "300"
-                , height "300"
+                [ width (String.fromInt gridSize)
+                , height (String.fromInt gridSize)
                 , viewBox "0 0 300 300"
+                , SE.on "pointerdown" (Decode.map DragStart offsetXY)
+                , SE.on "pointermove" (Decode.map DragOver offsetXY)
+                , SE.on "pointerup" (Decode.succeed Drop)
+                , css [ touchAction none ]
                 ]
                 (renderGame model)
             ]
         ]
+
+
+gridSize =
+    300
+
+
+offsetDecode : Int -> Decode.Decoder ( Int, Int )
+offsetDecode cellSize =
+    let
+        cellSizef =
+            toFloat cellSize
+    in
+    Decode.map2 (\x y -> ( x, y ))
+        (field "offsetX" float |> Decode.map (\x -> floor (x / cellSizef)))
+        (field "offsetY" float |> Decode.map (\y -> floor (y / cellSizef)))
 
 
 viewGameControls : GameState -> Html Msg
@@ -61,7 +87,7 @@ renderGame : Model -> List (Svg Msg)
 renderGame model =
     let
         cellSize =
-            300 // model.gridSize
+            gridSize // model.gridSize
 
         gridCells =
             Grid.render model.grid cellSize model.drag
