@@ -6911,7 +6911,6 @@ var $author$project$Update$handleTileSelection = F3(
 				$elm$core$Platform$Cmd$none);
 		}
 	});
-var $elm$core$Debug$log = _Debug_log;
 var $author$project$Model$GameOver = {$: 'GameOver'};
 var $author$project$Update$fallInc = 0.01;
 var $author$project$Msg$NewTiles = function (a) {
@@ -7378,8 +7377,9 @@ var $author$project$Update$update = F2(
 			case 'Restart':
 				return _Utils_Tuple2($author$project$Model$initialModel, $elm$core$Platform$Cmd$none);
 			case 'DragStart':
-				var x = msg.a;
-				var y = msg.b;
+				var _v1 = msg.a;
+				var x = _v1.a;
+				var y = _v1.b;
 				return _Utils_eq(model.gameState, $author$project$Model$Playing) ? _Utils_Tuple2(
 					_Utils_update(
 						model,
@@ -7392,16 +7392,13 @@ var $author$project$Update$update = F2(
 						}),
 					$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			case 'DragOver':
-				var x = msg.a;
-				var y = msg.b;
-				var _v1 = A2(
-					$elm$core$Debug$log,
-					'drag-over: ',
-					_Utils_Tuple2(x, y));
-				var _v2 = _Utils_Tuple2(model.gameState, model.drag);
-				if ((_v2.a.$ === 'Playing') && (_v2.b.$ === 'Just')) {
-					var _v3 = _v2.a;
-					var drag = _v2.b.a;
+				var _v2 = msg.a;
+				var x = _v2.a;
+				var y = _v2.b;
+				var _v3 = _Utils_Tuple2(model.gameState, model.drag);
+				if ((_v3.a.$ === 'Playing') && (_v3.b.$ === 'Just')) {
+					var _v4 = _v3.a;
+					var drag = _v3.b.a;
 					return A2(
 						$author$project$Update$isAdjacent,
 						drag.cell,
@@ -7436,10 +7433,10 @@ var $author$project$Update$update = F2(
 						{drag: $elm$core$Maybe$Nothing}),
 					$elm$core$Platform$Cmd$none);
 			default:
-				var _v4 = _Utils_Tuple2(model.gameState, model.drag);
-				if ((_v4.a.$ === 'Playing') && (_v4.b.$ === 'Just')) {
-					var _v5 = _v4.a;
-					var drag = _v4.b.a;
+				var _v5 = _Utils_Tuple2(model.gameState, model.drag);
+				if ((_v5.a.$ === 'Playing') && (_v5.b.$ === 'Just')) {
+					var _v6 = _v5.a;
+					var drag = _v5.b.a;
 					return A3(
 						$author$project$Update$handleSwap,
 						_Utils_update(
@@ -7452,6 +7449,13 @@ var $author$project$Update$update = F2(
 				}
 		}
 	});
+var $author$project$Msg$DragOver = function (a) {
+	return {$: 'DragOver', a: a};
+};
+var $author$project$Msg$DragStart = function (a) {
+	return {$: 'DragStart', a: a};
+};
+var $author$project$Msg$Drop = {$: 'Drop'};
 var $rtfeldman$elm_css$VirtualDom$Styled$Attribute = F3(
 	function (a, b, c) {
 		return {$: 'Attribute', a: a, b: b, c: c};
@@ -9129,6 +9133,7 @@ var $rtfeldman$elm_css$VirtualDom$Styled$Node = F3(
 var $rtfeldman$elm_css$VirtualDom$Styled$node = $rtfeldman$elm_css$VirtualDom$Styled$Node;
 var $rtfeldman$elm_css$Html$Styled$node = $rtfeldman$elm_css$VirtualDom$Styled$node;
 var $rtfeldman$elm_css$Html$Styled$div = $rtfeldman$elm_css$Html$Styled$node('div');
+var $author$project$View$gridSize = 300;
 var $rtfeldman$elm_css$Html$Styled$h1 = $rtfeldman$elm_css$Html$Styled$node('h1');
 var $rtfeldman$elm_css$Html$Styled$h3 = $rtfeldman$elm_css$Html$Styled$node('h3');
 var $rtfeldman$elm_css$VirtualDom$Styled$attribute = F2(
@@ -9141,17 +9146,52 @@ var $rtfeldman$elm_css$VirtualDom$Styled$attribute = F2(
 	});
 var $rtfeldman$elm_css$Svg$Styled$Attributes$height = $rtfeldman$elm_css$VirtualDom$Styled$attribute('height');
 var $rtfeldman$elm_css$Html$Styled$Attributes$name = $rtfeldman$elm_css$Html$Styled$Attributes$stringProperty('name');
+var $rtfeldman$elm_css$Css$none = {backgroundImage: $rtfeldman$elm_css$Css$Structure$Compatible, blockAxisOverflow: $rtfeldman$elm_css$Css$Structure$Compatible, borderStyle: $rtfeldman$elm_css$Css$Structure$Compatible, cursor: $rtfeldman$elm_css$Css$Structure$Compatible, display: $rtfeldman$elm_css$Css$Structure$Compatible, hoverCapability: $rtfeldman$elm_css$Css$Structure$Compatible, inlineAxisOverflow: $rtfeldman$elm_css$Css$Structure$Compatible, keyframes: $rtfeldman$elm_css$Css$Structure$Compatible, lengthOrNone: $rtfeldman$elm_css$Css$Structure$Compatible, lengthOrNoneOrMinMaxDimension: $rtfeldman$elm_css$Css$Structure$Compatible, lengthOrNumberOrAutoOrNoneOrContent: $rtfeldman$elm_css$Css$Structure$Compatible, listStyleType: $rtfeldman$elm_css$Css$Structure$Compatible, listStyleTypeOrPositionOrImage: $rtfeldman$elm_css$Css$Structure$Compatible, none: $rtfeldman$elm_css$Css$Structure$Compatible, outline: $rtfeldman$elm_css$Css$Structure$Compatible, pointerDevice: $rtfeldman$elm_css$Css$Structure$Compatible, pointerEvents: $rtfeldman$elm_css$Css$Structure$Compatible, resize: $rtfeldman$elm_css$Css$Structure$Compatible, scriptingSupport: $rtfeldman$elm_css$Css$Structure$Compatible, textDecorationLine: $rtfeldman$elm_css$Css$Structure$Compatible, textTransform: $rtfeldman$elm_css$Css$Structure$Compatible, touchAction: $rtfeldman$elm_css$Css$Structure$Compatible, transform: $rtfeldman$elm_css$Css$Structure$Compatible, updateFrequency: $rtfeldman$elm_css$Css$Structure$Compatible, value: 'none'};
+var $elm$json$Json$Decode$field = _Json_decodeField;
+var $elm$json$Json$Decode$float = _Json_decodeFloat;
+var $author$project$View$offsetDecode = function (cellSize) {
+	var cellSizef = cellSize;
+	return A3(
+		$elm$json$Json$Decode$map2,
+		F2(
+			function (x, y) {
+				return _Utils_Tuple2(x, y);
+			}),
+		A2(
+			$elm$json$Json$Decode$map,
+			function (x) {
+				return $elm$core$Basics$floor(x / cellSizef);
+			},
+			A2($elm$json$Json$Decode$field, 'offsetX', $elm$json$Json$Decode$float)),
+		A2(
+			$elm$json$Json$Decode$map,
+			function (y) {
+				return $elm$core$Basics$floor(y / cellSizef);
+			},
+			A2($elm$json$Json$Decode$field, 'offsetY', $elm$json$Json$Decode$float)));
+};
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $rtfeldman$elm_css$VirtualDom$Styled$on = F2(
+	function (eventName, handler) {
+		return A3(
+			$rtfeldman$elm_css$VirtualDom$Styled$Attribute,
+			A2($elm$virtual_dom$VirtualDom$on, eventName, handler),
+			false,
+			'');
+	});
+var $rtfeldman$elm_css$Html$Styled$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$rtfeldman$elm_css$VirtualDom$Styled$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $rtfeldman$elm_css$Svg$Styled$Events$on = $rtfeldman$elm_css$Html$Styled$Events$on;
 var $rtfeldman$elm_css$Html$Styled$p = $rtfeldman$elm_css$Html$Styled$node('p');
 var $rtfeldman$elm_css$Html$Styled$Attributes$property = $rtfeldman$elm_css$VirtualDom$Styled$property;
-var $author$project$Msg$DragOver = F2(
-	function (a, b) {
-		return {$: 'DragOver', a: a, b: b};
-	});
-var $author$project$Msg$DragStart = F2(
-	function (a, b) {
-		return {$: 'DragStart', a: a, b: b};
-	});
-var $author$project$Msg$Drop = {$: 'Drop'};
 var $rtfeldman$elm_css$Css$cursor = $rtfeldman$elm_css$Css$prop1('cursor');
 var $rtfeldman$elm_css$Css$fill = $rtfeldman$elm_css$Css$prop1('fill');
 var $rtfeldman$elm_css$Css$grab = {cursor: $rtfeldman$elm_css$Css$Structure$Compatible, value: 'grab'};
@@ -9555,6 +9595,7 @@ var $author$project$Utils$Styles$cellText = _List_fromArray(
 		A2($rtfeldman$elm_css$Css$property, 'user-select', 'none')
 	]);
 var $rtfeldman$elm_css$Svg$Styled$Attributes$dominantBaseline = $rtfeldman$elm_css$VirtualDom$Styled$attribute('dominant-baseline');
+var $rtfeldman$elm_css$Html$Styled$Attributes$draggable = $rtfeldman$elm_css$VirtualDom$Styled$attribute('draggable');
 var $rtfeldman$elm_css$Css$notAllowed = {cursor: $rtfeldman$elm_css$Css$Structure$Compatible, value: 'not-allowed'};
 var $author$project$Utils$Styles$emptyCell = _List_fromArray(
 	[
@@ -9572,26 +9613,6 @@ var $rtfeldman$elm_css$VirtualDom$Styled$NodeNS = F4(
 var $rtfeldman$elm_css$VirtualDom$Styled$nodeNS = $rtfeldman$elm_css$VirtualDom$Styled$NodeNS;
 var $rtfeldman$elm_css$Svg$Styled$node = $rtfeldman$elm_css$VirtualDom$Styled$nodeNS('http://www.w3.org/2000/svg');
 var $rtfeldman$elm_css$Svg$Styled$g = $rtfeldman$elm_css$Svg$Styled$node('g');
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $rtfeldman$elm_css$VirtualDom$Styled$on = F2(
-	function (eventName, handler) {
-		return A3(
-			$rtfeldman$elm_css$VirtualDom$Styled$Attribute,
-			A2($elm$virtual_dom$VirtualDom$on, eventName, handler),
-			false,
-			'');
-	});
-var $rtfeldman$elm_css$Html$Styled$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$rtfeldman$elm_css$VirtualDom$Styled$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $rtfeldman$elm_css$Svg$Styled$Events$on = $rtfeldman$elm_css$Html$Styled$Events$on;
 var $rtfeldman$elm_css$Svg$Styled$rect = $rtfeldman$elm_css$Svg$Styled$node('rect');
 var $rtfeldman$elm_css$Svg$Styled$Attributes$strokeWidth = $rtfeldman$elm_css$VirtualDom$Styled$attribute('stroke-width');
 var $rtfeldman$elm_css$VirtualDom$Styled$Unstyled = function (a) {
@@ -9643,35 +9664,8 @@ var $author$project$Utils$Grid$renderCell = F5(
 				$rtfeldman$elm_css$Svg$Styled$g,
 				_List_fromArray(
 					[
-						A2(
-						$rtfeldman$elm_css$Svg$Styled$Events$on,
-						'mousedown',
-						$elm$json$Json$Decode$succeed(
-							A2($author$project$Msg$DragStart, x_, y_))),
-						A2(
-						$rtfeldman$elm_css$Svg$Styled$Events$on,
-						'touchstart',
-						$elm$json$Json$Decode$succeed(
-							A2($author$project$Msg$DragStart, x_, y_))),
-						A2(
-						$rtfeldman$elm_css$Svg$Styled$Events$on,
-						'mouseup',
-						$elm$json$Json$Decode$succeed($author$project$Msg$Drop)),
-						A2(
-						$rtfeldman$elm_css$Svg$Styled$Events$on,
-						'touchend',
-						$elm$json$Json$Decode$succeed($author$project$Msg$Drop)),
-						A2(
-						$rtfeldman$elm_css$Svg$Styled$Events$on,
-						'mouseenter',
-						$elm$json$Json$Decode$succeed(
-							A2($author$project$Msg$DragOver, x_, y_))),
-						A2(
-						$rtfeldman$elm_css$Svg$Styled$Events$on,
-						'touchmove',
-						$elm$json$Json$Decode$succeed(
-							A2($author$project$Msg$DragOver, x_, y_))),
-						$rtfeldman$elm_css$Svg$Styled$Attributes$css(cellStyle)
+						$rtfeldman$elm_css$Svg$Styled$Attributes$css(cellStyle),
+						$rtfeldman$elm_css$Html$Styled$Attributes$draggable('true')
 					]),
 				_List_fromArray(
 					[
@@ -9701,24 +9695,6 @@ var $author$project$Utils$Grid$renderCell = F5(
 				$rtfeldman$elm_css$Svg$Styled$g,
 				_List_fromArray(
 					[
-						A2(
-						$rtfeldman$elm_css$Svg$Styled$Events$on,
-						'mouseenter',
-						$elm$json$Json$Decode$succeed(
-							A2($author$project$Msg$DragOver, x_, y_))),
-						A2(
-						$rtfeldman$elm_css$Svg$Styled$Events$on,
-						'touchmove',
-						$elm$json$Json$Decode$succeed(
-							A2($author$project$Msg$DragOver, x_, y_))),
-						A2(
-						$rtfeldman$elm_css$Svg$Styled$Events$on,
-						'mouseup',
-						$elm$json$Json$Decode$succeed($author$project$Msg$Drop)),
-						A2(
-						$rtfeldman$elm_css$Svg$Styled$Events$on,
-						'touchend',
-						$elm$json$Json$Decode$succeed($author$project$Msg$Drop)),
 						$rtfeldman$elm_css$Svg$Styled$Attributes$css($author$project$Utils$Styles$emptyCell)
 					]),
 				_List_fromArray(
@@ -9794,7 +9770,7 @@ var $author$project$Utils$Tile$render = F2(
 				]));
 	});
 var $author$project$View$renderGame = function (model) {
-	var cellSize = (300 / model.gridSize) | 0;
+	var cellSize = ($author$project$View$gridSize / model.gridSize) | 0;
 	var fallingTiles = A2(
 		$elm$core$List$map,
 		$author$project$Utils$Tile$render(cellSize),
@@ -9804,6 +9780,7 @@ var $author$project$View$renderGame = function (model) {
 };
 var $rtfeldman$elm_css$Svg$Styled$svg = $rtfeldman$elm_css$Svg$Styled$node('svg');
 var $rtfeldman$elm_css$Html$Styled$text = $rtfeldman$elm_css$VirtualDom$Styled$text;
+var $rtfeldman$elm_css$Css$touchAction = $rtfeldman$elm_css$Css$prop1('touch-action');
 var $rtfeldman$elm_css$Svg$Styled$Attributes$viewBox = $rtfeldman$elm_css$VirtualDom$Styled$attribute('viewBox');
 var $author$project$Msg$Pause = {$: 'Pause'};
 var $author$project$Msg$Restart = {$: 'Restart'};
@@ -9942,6 +9919,7 @@ var $author$project$View$viewGameControls = function (gameState) {
 	}
 };
 var $author$project$View$view = function (model) {
+	var offsetXY = $author$project$View$offsetDecode(($author$project$View$gridSize / model.gridSize) | 0);
 	return A2(
 		$rtfeldman$elm_css$Html$Styled$div,
 		_List_fromArray(
@@ -10006,9 +9984,28 @@ var $author$project$View$view = function (model) {
 						$rtfeldman$elm_css$Svg$Styled$svg,
 						_List_fromArray(
 							[
-								$rtfeldman$elm_css$Svg$Styled$Attributes$width('300'),
-								$rtfeldman$elm_css$Svg$Styled$Attributes$height('300'),
-								$rtfeldman$elm_css$Svg$Styled$Attributes$viewBox('0 0 300 300')
+								$rtfeldman$elm_css$Svg$Styled$Attributes$width(
+								$elm$core$String$fromInt($author$project$View$gridSize)),
+								$rtfeldman$elm_css$Svg$Styled$Attributes$height(
+								$elm$core$String$fromInt($author$project$View$gridSize)),
+								$rtfeldman$elm_css$Svg$Styled$Attributes$viewBox('0 0 300 300'),
+								A2(
+								$rtfeldman$elm_css$Svg$Styled$Events$on,
+								'pointerdown',
+								A2($elm$json$Json$Decode$map, $author$project$Msg$DragStart, offsetXY)),
+								A2(
+								$rtfeldman$elm_css$Svg$Styled$Events$on,
+								'pointermove',
+								A2($elm$json$Json$Decode$map, $author$project$Msg$DragOver, offsetXY)),
+								A2(
+								$rtfeldman$elm_css$Svg$Styled$Events$on,
+								'pointerup',
+								$elm$json$Json$Decode$succeed($author$project$Msg$Drop)),
+								$rtfeldman$elm_css$Svg$Styled$Attributes$css(
+								_List_fromArray(
+									[
+										$rtfeldman$elm_css$Css$touchAction($rtfeldman$elm_css$Css$none)
+									]))
 							]),
 						$author$project$View$renderGame(model))
 					]))
