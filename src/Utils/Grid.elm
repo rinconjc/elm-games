@@ -82,37 +82,32 @@ isFull grid =
             False
 
 
-render : Grid -> Int -> Maybe Drag -> List (Svg Msg)
-render grid cellSize drag =
+render : Grid -> Int -> (( Int, Int ) -> Bool) -> List (Svg Msg)
+render grid cellSize selectFn =
     let
         size =
             Array.length grid
     in
     List.concatMap
         (\y_ ->
-            List.map (\x_ -> renderCell x_ y_ cellSize grid drag)
+            List.map (\x_ -> renderCell x_ y_ cellSize grid selectFn)
                 (List.range 0 (size - 1))
         )
         (List.range 0 (size - 1))
 
 
-renderCell : Int -> Int -> Int -> Grid -> Maybe Drag -> Svg Msg
-renderCell x_ y_ cellSize grid drag =
+renderCell : Int -> Int -> Int -> Grid -> (( Int, Int ) -> Bool) -> Svg Msg
+renderCell x_ y_ cellSize grid selectFn =
     let
         cellValue =
             getCell grid x_ y_
 
         ( cellStyle, textStyle ) =
-            case drag of
-                Just { cell, currentPos } ->
-                    if cell == ( x_, y_ ) || ( x_, y_ ) == currentPos then
-                        ( Utils.Styles.cellActive, Utils.Styles.cellText )
+            if selectFn ( x_, y_ ) then
+                ( Utils.Styles.cellActive, Utils.Styles.cellText )
 
-                    else
-                        ( Utils.Styles.cell, Utils.Styles.cellText )
-
-                Nothing ->
-                    ( Utils.Styles.cell, Utils.Styles.cellText )
+            else
+                ( Utils.Styles.cell, Utils.Styles.cellText )
 
         cellAttrs =
             [ x (String.fromInt (x_ * cellSize))

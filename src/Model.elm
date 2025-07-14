@@ -11,7 +11,7 @@ type alias Model =
     , currentTiles : List Tile
     , score : Int
     , gameState : GameState
-    , selectedTile : Maybe ( Int, Int )
+    , selected : Maybe ( Int, Int )
     , drag : Maybe Drag
     }
 
@@ -29,6 +29,6 @@ initialModel =
     , currentTiles = []
     , score = 0
     , gameState = Playing
-    , selectedTile = Nothing
+    , selected = Nothing
     , drag = Nothing
     }

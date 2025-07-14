@@ -5284,7 +5284,7 @@ var $author$project$Model$initialModel = {
 	grid: $author$project$Utils$Grid$empty(5),
 	gridSize: 5,
 	score: 0,
-	selectedTile: $elm$core$Maybe$Nothing
+	selected: $elm$core$Maybe$Nothing
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
@@ -6881,36 +6881,7 @@ var $author$project$Update$handleSwap = F3(
 			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 		}
 	});
-var $author$project$Update$handleTileSelection = F3(
-	function (model, x, y) {
-		var _v0 = model.selectedTile;
-		if (_v0.$ === 'Nothing') {
-			return _Utils_Tuple2(
-				_Utils_update(
-					model,
-					{
-						selectedTile: $elm$core$Maybe$Just(
-							_Utils_Tuple2(x, y))
-					}),
-				$elm$core$Platform$Cmd$none);
-		} else {
-			var _v1 = _v0.a;
-			var selectedX = _v1.a;
-			var selectedY = _v1.b;
-			return (($elm$core$Basics$abs(x - selectedX) + $elm$core$Basics$abs(y - selectedY)) === 1) ? _Utils_Tuple2(
-				_Utils_update(
-					model,
-					{selectedTile: $elm$core$Maybe$Nothing}),
-				$elm$core$Platform$Cmd$none) : _Utils_Tuple2(
-				_Utils_update(
-					model,
-					{
-						selectedTile: $elm$core$Maybe$Just(
-							_Utils_Tuple2(x, y))
-					}),
-				$elm$core$Platform$Cmd$none);
-		}
-	});
+var $elm$core$Debug$log = _Debug_log;
 var $author$project$Model$GameOver = {$: 'GameOver'};
 var $author$project$Update$fallInc = 0.01;
 var $author$project$Msg$NewTiles = function (a) {
@@ -7287,24 +7258,6 @@ var $author$project$Update$moveTilesDown = function (model) {
 			landedTiles);
 	}
 };
-var $author$project$Update$removeMatchedTiles = F2(
-	function (model, positions) {
-		var clearedGrid = A3(
-			$elm$core$List$foldl,
-			F2(
-				function (_v0, g) {
-					var x = _v0.a;
-					var y = _v0.b;
-					return A4($author$project$Utils$Grid$setCell, x, y, $elm$core$Maybe$Nothing, g);
-				}),
-			model.grid,
-			positions);
-		return _Utils_Tuple2(
-			_Utils_update(
-				model,
-				{grid: clearedGrid}),
-			$elm$core$Platform$Cmd$none);
-	});
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
 		return A3(
@@ -7355,13 +7308,6 @@ var $author$project$Update$update = F2(
 				return A2($author$project$Update$spawnNewTiles, model, values);
 			case 'Tick':
 				return _Utils_eq(model.gameState, $author$project$Model$Playing) ? $author$project$Update$moveTilesDown(model) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-			case 'SelectTile':
-				var x = msg.a;
-				var y = msg.b;
-				return A3($author$project$Update$handleTileSelection, model, x, y);
-			case 'RemoveTriplets':
-				var positions = msg.a;
-				return A2($author$project$Update$removeMatchedTiles, model, positions);
 			case 'Pause':
 				return _Utils_Tuple2(
 					_Utils_update(
@@ -7432,7 +7378,7 @@ var $author$project$Update$update = F2(
 						model,
 						{drag: $elm$core$Maybe$Nothing}),
 					$elm$core$Platform$Cmd$none);
-			default:
+			case 'Drop':
 				var _v5 = _Utils_Tuple2(model.gameState, model.drag);
 				if ((_v5.a.$ === 'Playing') && (_v5.b.$ === 'Just')) {
 					var _v6 = _v5.a;
@@ -7447,8 +7393,53 @@ var $author$project$Update$update = F2(
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
+			default:
+				var _v7 = msg.a;
+				var x = _v7.a;
+				var y = _v7.b;
+				var _v8 = A2(
+					$elm$core$Debug$log,
+					'click:',
+					_Utils_Tuple3(x, y, model.selected));
+				var _v9 = _Utils_Tuple2(model.gameState, model.selected);
+				if (_v9.a.$ === 'Playing') {
+					if (_v9.b.$ === 'Nothing') {
+						var _v10 = _v9.a;
+						var _v11 = _v9.b;
+						return _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{
+									selected: $elm$core$Maybe$Just(
+										_Utils_Tuple2(x, y))
+								}),
+							$elm$core$Platform$Cmd$none);
+					} else {
+						var _v12 = _v9.a;
+						var selected = _v9.b.a;
+						return A2(
+							$author$project$Update$isAdjacent,
+							selected,
+							_Utils_Tuple2(x, y)) ? A3(
+							$author$project$Update$handleSwap,
+							_Utils_update(
+								model,
+								{selected: $elm$core$Maybe$Nothing}),
+							selected,
+							_Utils_Tuple2(x, y)) : _Utils_Tuple2(
+							_Utils_update(
+								model,
+								{selected: $elm$core$Maybe$Nothing}),
+							$elm$core$Platform$Cmd$none);
+					}
+				} else {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				}
 		}
 	});
+var $author$project$Msg$Click = function (a) {
+	return {$: 'Click', a: a};
+};
 var $author$project$Msg$DragOver = function (a) {
 	return {$: 'DragOver', a: a};
 };
@@ -9191,7 +9182,34 @@ var $rtfeldman$elm_css$Html$Styled$Events$on = F2(
 	});
 var $rtfeldman$elm_css$Svg$Styled$Events$on = $rtfeldman$elm_css$Html$Styled$Events$on;
 var $rtfeldman$elm_css$Html$Styled$p = $rtfeldman$elm_css$Html$Styled$node('p');
+var $elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
+	return {$: 'MayPreventDefault', a: a};
+};
+var $rtfeldman$elm_css$Html$Styled$Events$preventDefaultOn = F2(
+	function (event, decoder) {
+		return A2(
+			$rtfeldman$elm_css$VirtualDom$Styled$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayPreventDefault(decoder));
+	});
+var $rtfeldman$elm_css$Svg$Styled$Events$preventDefaultOn = $rtfeldman$elm_css$Html$Styled$Events$preventDefaultOn;
 var $rtfeldman$elm_css$Html$Styled$Attributes$property = $rtfeldman$elm_css$VirtualDom$Styled$property;
+var $author$project$View$cellSelected = F2(
+	function (model, pos) {
+		var _v0 = _Utils_Tuple2(model.drag, model.selected);
+		if (_v0.a.$ === 'Just') {
+			var cell = _v0.a.a.cell;
+			var currentPos = _v0.a.a.currentPos;
+			return _Utils_eq(pos, cell) || _Utils_eq(pos, currentPos);
+		} else {
+			if (_v0.b.$ === 'Just') {
+				var selection = _v0.b.a;
+				return _Utils_eq(selection, pos);
+			} else {
+				return false;
+			}
+		}
+	});
 var $rtfeldman$elm_css$Css$cursor = $rtfeldman$elm_css$Css$prop1('cursor');
 var $rtfeldman$elm_css$Css$fill = $rtfeldman$elm_css$Css$prop1('fill');
 var $rtfeldman$elm_css$Css$grab = {cursor: $rtfeldman$elm_css$Css$Structure$Compatible, value: 'grab'};
@@ -9629,7 +9647,7 @@ var $rtfeldman$elm_css$Svg$Styled$Attributes$width = $rtfeldman$elm_css$VirtualD
 var $rtfeldman$elm_css$Svg$Styled$Attributes$x = $rtfeldman$elm_css$VirtualDom$Styled$attribute('x');
 var $rtfeldman$elm_css$Svg$Styled$Attributes$y = $rtfeldman$elm_css$VirtualDom$Styled$attribute('y');
 var $author$project$Utils$Grid$renderCell = F5(
-	function (x_, y_, cellSize, grid, drag) {
+	function (x_, y_, cellSize, grid, selectFn) {
 		var cellValue = A3($author$project$Utils$Grid$getCell, grid, x_, y_);
 		var cellAttrs = _List_fromArray(
 			[
@@ -9643,19 +9661,8 @@ var $author$project$Utils$Grid$renderCell = F5(
 				$elm$core$String$fromInt(cellSize)),
 				$rtfeldman$elm_css$Svg$Styled$Attributes$strokeWidth('1')
 			]);
-		var _v0 = function () {
-			if (drag.$ === 'Just') {
-				var cell = drag.a.cell;
-				var currentPos = drag.a.currentPos;
-				return (_Utils_eq(
-					cell,
-					_Utils_Tuple2(x_, y_)) || _Utils_eq(
-					_Utils_Tuple2(x_, y_),
-					currentPos)) ? _Utils_Tuple2($author$project$Utils$Styles$cellActive, $author$project$Utils$Styles$cellText) : _Utils_Tuple2($author$project$Utils$Styles$cell, $author$project$Utils$Styles$cellText);
-			} else {
-				return _Utils_Tuple2($author$project$Utils$Styles$cell, $author$project$Utils$Styles$cellText);
-			}
-		}();
+		var _v0 = selectFn(
+			_Utils_Tuple2(x_, y_)) ? _Utils_Tuple2($author$project$Utils$Styles$cellActive, $author$project$Utils$Styles$cellText) : _Utils_Tuple2($author$project$Utils$Styles$cell, $author$project$Utils$Styles$cellText);
 		var cellStyle = _v0.a;
 		var textStyle = _v0.b;
 		if (cellValue.$ === 'Just') {
@@ -9710,7 +9717,7 @@ var $author$project$Utils$Grid$renderCell = F5(
 		}
 	});
 var $author$project$Utils$Grid$render = F3(
-	function (grid, cellSize, drag) {
+	function (grid, cellSize, selectFn) {
 		var size = $elm$core$Array$length(grid);
 		return A2(
 			$elm$core$List$concatMap,
@@ -9718,7 +9725,7 @@ var $author$project$Utils$Grid$render = F3(
 				return A2(
 					$elm$core$List$map,
 					function (x_) {
-						return A5($author$project$Utils$Grid$renderCell, x_, y_, cellSize, grid, drag);
+						return A5($author$project$Utils$Grid$renderCell, x_, y_, cellSize, grid, selectFn);
 					},
 					A2($elm$core$List$range, 0, size - 1));
 			},
@@ -9775,7 +9782,11 @@ var $author$project$View$renderGame = function (model) {
 		$elm$core$List$map,
 		$author$project$Utils$Tile$render(cellSize),
 		model.currentTiles);
-	var gridCells = A3($author$project$Utils$Grid$render, model.grid, cellSize, model.drag);
+	var gridCells = A3(
+		$author$project$Utils$Grid$render,
+		model.grid,
+		cellSize,
+		$author$project$View$cellSelected(model));
 	return _Utils_ap(gridCells, fallingTiles);
 };
 var $rtfeldman$elm_css$Svg$Styled$svg = $rtfeldman$elm_css$Svg$Styled$node('svg');
@@ -10001,6 +10012,17 @@ var $author$project$View$view = function (model) {
 								$rtfeldman$elm_css$Svg$Styled$Events$on,
 								'pointerup',
 								$elm$json$Json$Decode$succeed($author$project$Msg$Drop)),
+								A2(
+								$rtfeldman$elm_css$Svg$Styled$Events$preventDefaultOn,
+								'click',
+								A2(
+									$elm$json$Json$Decode$map,
+									function (pos) {
+										return _Utils_Tuple2(
+											$author$project$Msg$Click(pos),
+											true);
+									},
+									offsetXY)),
 								$rtfeldman$elm_css$Svg$Styled$Attributes$css(
 								_List_fromArray(
 									[

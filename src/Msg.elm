@@ -6,8 +6,6 @@ import Time
 type Msg
     = NewTiles ( List Int, List Int )
     | Tick Time.Posix
-    | SelectTile Int Int
-    | RemoveTriplets (List ( Int, Int ))
     | Pause
     | Resume
     | Restart
@@ -15,3 +13,4 @@ type Msg
     | DragEnd
     | DragOver ( Int, Int )
     | Drop
+    | Click ( Int, Int )

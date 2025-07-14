@@ -26,12 +26,6 @@ update msg model =
             else
                 ( model, Cmd.none )
 
-        SelectTile x y ->
-            handleTileSelection model x y
-
-        RemoveTriplets positions ->
-            removeMatchedTiles model positions
-
         Pause ->
             ( { model | gameState = Paused }, Cmd.none )
 
@@ -67,6 +61,25 @@ update msg model =
             case ( model.gameState, model.drag ) of
                 ( Playing, Just drag ) ->
                     handleSwap { model | drag = Nothing } drag.cell drag.currentPos
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Click ( x, y ) ->
+            let
+                _ =
+                    Debug.log "click:" ( x, y, model.selected )
+            in
+            case ( model.gameState, model.selected ) of
+                ( Playing, Nothing ) ->
+                    ( { model | selected = Just ( x, y ) }, Cmd.none )
+
+                ( Playing, Just selected ) ->
+                    if isAdjacent selected ( x, y ) then
+                        handleSwap { model | selected = Nothing } selected ( x, y )
+
+                    else
+                        ( { model | selected = Nothing }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -149,20 +162,6 @@ handleLanding model landedTiles =
     ( handleMatches { model | grid = updatedGrid }, Cmd.none )
 
 
-handleTileSelection : Model -> Int -> Int -> ( Model, Cmd Msg )
-handleTileSelection model x y =
-    case model.selectedTile of
-        Nothing ->
-            ( { model | selectedTile = Just ( x, y ) }, Cmd.none )
-
-        Just ( selectedX, selectedY ) ->
-            if (abs (x - selectedX) + abs (y - selectedY)) == 1 then
-                ( { model | selectedTile = Nothing }, Cmd.none )
-
-            else
-                ( { model | selectedTile = Just ( x, y ) }, Cmd.none )
-
-
 handleSwap : Model -> ( Int, Int ) -> ( Int, Int ) -> ( Model, Cmd Msg )
 handleSwap model ( x1, y1 ) ( x2, y2 ) =
     if isAdjacent ( x1, y1 ) ( x2, y2 ) then
@@ -206,12 +205,3 @@ handleMatches model =
 isAdjacent : ( Int, Int ) -> ( Int, Int ) -> Bool
 isAdjacent ( x1, y1 ) ( x2, y2 ) =
     abs (x1 - x2) == 1 && y1 == y2 || abs (y1 - y2) == 1 && x1 == x2
-
-
-removeMatchedTiles : Model -> List ( Int, Int ) -> ( Model, Cmd Msg )
-removeMatchedTiles model positions =
-    let
-        clearedGrid =
-            List.foldl (\( x, y ) g -> Grid.setCell x y Nothing g) model.grid positions
-    in
-    ( { model | grid = clearedGrid }, Cmd.none )

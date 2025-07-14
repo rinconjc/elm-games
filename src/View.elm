@@ -42,6 +42,7 @@ view model =
                 , SE.on "pointerdown" (Decode.map DragStart offsetXY)
                 , SE.on "pointermove" (Decode.map DragOver offsetXY)
                 , SE.on "pointerup" (Decode.succeed Drop)
+                , SE.preventDefaultOn "click" (Decode.map (\pos -> ( Click pos, True )) offsetXY)
                 , css [ touchAction none ]
                 ]
                 (renderGame model)
@@ -90,9 +91,22 @@ renderGame model =
             gridSize // model.gridSize
 
         gridCells =
-            Grid.render model.grid cellSize model.drag
+            Grid.render model.grid cellSize (cellSelected model)
 
         fallingTiles =
             List.map (render cellSize) model.currentTiles
     in
     gridCells ++ fallingTiles
+
+
+cellSelected : Model -> ( Int, Int ) -> Bool
+cellSelected model pos =
+    case ( model.drag, model.selected ) of
+        ( Just { cell, currentPos }, _ ) ->
+            pos == cell || pos == currentPos
+
+        ( _, Just selection ) ->
+            selection == pos
+
+        _ ->
+            False
