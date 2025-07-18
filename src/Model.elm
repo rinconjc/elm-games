@@ -1,12 +1,12 @@
-module Model exposing (GameState(..), Model, initialModel)
+module Model exposing (GameState(..), Model, Player, initialModel, restartGame)
 
-import Array exposing (Array)
 import Utils.Grid as Grid exposing (Drag)
 import Utils.Tile exposing (Tile)
 
 
 type alias Model =
-    { gridSize : Int
+    { player : Maybe Player
+    , gridSize : Int
     , grid : Grid.Grid
     , currentTiles : List Tile
     , score : Int
@@ -17,18 +17,31 @@ type alias Model =
 
 
 type GameState
-    = Playing
+    = NotStarted
+    | Playing
     | GameOver
     | Paused
 
 
+type alias Player =
+    { name : String
+    , bestScore : Int
+    }
+
+
 initialModel : Model
 initialModel =
-    { gridSize = 5
+    { player = Nothing
+    , gridSize = 5
     , grid = Grid.empty 5
     , currentTiles = []
     , score = 0
-    , gameState = Playing
+    , gameState = NotStarted
     , selected = Nothing
     , drag = Nothing
     }
+
+
+restartGame : Model -> Model
+restartGame model =
+    { initialModel | player = model.player, gameState = Playing }

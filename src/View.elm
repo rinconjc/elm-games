@@ -2,17 +2,17 @@ module View exposing (view)
 
 import Css exposing (none, touchAction)
 import Html.Styled exposing (Html, div, h1, h3, node, p, text)
-import Html.Styled.Attributes exposing (class, name, property)
-import Html.Styled.Events exposing (onClick)
+import Html.Styled.Attributes exposing (name, placeholder, property)
+import Html.Styled.Events exposing (onClick, onInput)
 import Json.Decode as Decode exposing (field, float)
 import Json.Encode as Encode
-import Model exposing (GameState(..), Model)
+import Model exposing (GameState(..), Model, Player)
 import Msg exposing (Msg(..))
 import Svg.Styled exposing (Svg, svg)
 import Svg.Styled.Attributes exposing (css, height, viewBox, width)
 import Svg.Styled.Events as SE
 import Utils.Grid as Grid
-import Utils.Styles exposing (sButton, sH2)
+import Utils.Styles exposing (sButton, sH2, sInput)
 import Utils.Tile exposing (render)
 
 
@@ -30,9 +30,10 @@ view model =
             []
         , h1 [] [ text "Sum Swap Game!" ]
         , p [] [ text "Swap tiles to make up 3 adjacent matching numbers (adding or substrating the first 2 gives the third) " ]
-        , div [ class "game-controls" ]
-            [ viewGameControls model.gameState
-            , h3 [ class "score" ] [ text ("Score: " ++ String.fromInt model.score) ]
+        , div []
+            [ playerView model
+            , viewGameControls model.gameState
+            , h3 [] [ text ("Score: " ++ String.fromInt model.score) ]
             ]
         , div []
             [ svg
@@ -65,9 +66,35 @@ offsetDecode cellSize =
         (field "offsetY" float |> Decode.map (\y -> floor (y / cellSizef)))
 
 
+playerView : Model -> Html Msg
+playerView model =
+    let
+        register =
+            div []
+                [ sH2 [] [ text "Register to Play:" ]
+                , sInput [ placeholder "Your name", onInput Registered ] []
+                ]
+    in
+    case ( model.gameState, model.player ) of
+        ( NotStarted, _ ) ->
+            register
+
+        ( _, Nothing ) ->
+            register
+
+        ( _, Just p ) ->
+            div []
+                [ h3 [] [ text ("Player:" ++ p.name) ]
+                , h3 [] [ text ("Best Score:" ++ String.fromInt p.bestScore) ]
+                ]
+
+
 viewGameControls : GameState -> Html Msg
 viewGameControls gameState =
     case gameState of
+        NotStarted ->
+            sButton [ onClick Restart ] [ text "Play" ]
+
         Playing ->
             sButton [ onClick Pause ] [ text "Pause" ]
 

@@ -14,3 +14,4 @@ type Msg
     | DragOver ( Int, Int )
     | Drop
     | Click ( Int, Int )
+    | Registered String

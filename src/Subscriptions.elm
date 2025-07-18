@@ -1,7 +1,7 @@
 module Subscriptions exposing (subscriptions)
 
-import Msg exposing (Msg(..))
 import Model exposing (Model)
+import Msg exposing (Msg(..))
 import Time
 
 

@@ -1,6 +1,6 @@
 module Update exposing (update)
 
-import Model exposing (GameState(..), Model)
+import Model exposing (GameState(..), Model, restartGame)
 import Msg exposing (Msg(..))
 import Platform.Cmd as Cmd
 import Random
@@ -16,6 +16,9 @@ fallInc =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Registered name ->
+            ( { model | player = Just { name = name, bestScore = 0 } }, Cmd.none )
+
         NewTiles values ->
             spawnNewTiles model values
 
@@ -33,7 +36,7 @@ update msg model =
             ( { model | gameState = Playing }, Cmd.none )
 
         Restart ->
-            ( Model.initialModel, Cmd.none )
+            ( restartGame model, Cmd.none )
 
         DragStart ( x, y ) ->
             if model.gameState == Playing then
@@ -66,10 +69,6 @@ update msg model =
                     ( model, Cmd.none )
 
         Click ( x, y ) ->
-            let
-                _ =
-                    Debug.log "click:" ( x, y, model.selected )
-            in
             case ( model.gameState, model.selected ) of
                 ( Playing, Nothing ) ->
                     ( { model | selected = Just ( x, y ) }, Cmd.none )
@@ -108,7 +107,21 @@ moveTilesDown model =
     case model.currentTiles of
         [] ->
             if isFull model.grid then
-                ( { model | gameState = GameOver }, Cmd.none )
+                ( { model
+                    | gameState = GameOver
+                    , player =
+                        Maybe.map
+                            (\p ->
+                                if p.bestScore < model.score then
+                                    { p | bestScore = model.score }
+
+                                else
+                                    p
+                            )
+                            model.player
+                  }
+                , Cmd.none
+                )
 
             else
                 -- No tiles? Spawn new ones!

@@ -1,7 +1,7 @@
 module Utils.Styles exposing (..)
 
 import Css exposing (..)
-import Html.Styled exposing (Attribute, Html, button, h2, styled)
+import Html.Styled exposing (Attribute, Html, button, h2, input, styled)
 
 
 container : List Style
@@ -28,6 +28,12 @@ sButton =
         , margin2 (px 4) (px 2)
         , cursor pointer
         ]
+
+
+sInput : List (Attribute msg) -> List (Html msg) -> Html msg
+sInput =
+    styled input
+        [ fontSize (em 1.3), padding (px 5) ]
 
 
 sH2 : List (Attribute msg) -> List (Html msg) -> Html msg
