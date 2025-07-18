@@ -5261,7 +5261,7 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$element = _Browser_element;
-var $author$project$Model$Playing = {$: 'Playing'};
+var $author$project$Model$NotStarted = {$: 'NotStarted'};
 var $elm$core$Array$repeat = F2(
 	function (n, e) {
 		return A2(
@@ -5280,9 +5280,10 @@ var $author$project$Utils$Grid$empty = function (size) {
 var $author$project$Model$initialModel = {
 	currentTiles: _List_Nil,
 	drag: $elm$core$Maybe$Nothing,
-	gameState: $author$project$Model$Playing,
+	gameState: $author$project$Model$NotStarted,
 	grid: $author$project$Utils$Grid$empty(5),
 	gridSize: 5,
+	player: $elm$core$Maybe$Nothing,
 	score: 0,
 	selected: $elm$core$Maybe$Nothing
 };
@@ -6470,6 +6471,7 @@ var $rtfeldman$elm_css$VirtualDom$Styled$toUnstyled = function (vdom) {
 };
 var $rtfeldman$elm_css$Html$Styled$toUnstyled = $rtfeldman$elm_css$VirtualDom$Styled$toUnstyled;
 var $author$project$Model$Paused = {$: 'Paused'};
+var $author$project$Model$Playing = {$: 'Playing'};
 var $elm$core$Maybe$andThen = F2(
 	function (callback, maybeValue) {
 		if (maybeValue.$ === 'Just') {
@@ -6881,7 +6883,6 @@ var $author$project$Update$handleSwap = F3(
 			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 		}
 	});
-var $elm$core$Debug$log = _Debug_log;
 var $author$project$Model$GameOver = {$: 'GameOver'};
 var $author$project$Update$fallInc = 0.01;
 var $author$project$Msg$NewTiles = function (a) {
@@ -7233,7 +7234,17 @@ var $author$project$Update$moveTilesDown = function (model) {
 		return $author$project$Utils$Grid$isFull(model.grid) ? _Utils_Tuple2(
 			_Utils_update(
 				model,
-				{gameState: $author$project$Model$GameOver}),
+				{
+					gameState: $author$project$Model$GameOver,
+					player: A2(
+						$elm$core$Maybe$map,
+						function (p) {
+							return (_Utils_cmp(p.bestScore, model.score) < 0) ? _Utils_update(
+								p,
+								{bestScore: model.score}) : p;
+						},
+						model.player)
+				}),
 			$elm$core$Platform$Cmd$none) : _Utils_Tuple2(
 			model,
 			$author$project$Update$generateNewTilesCmd(model.gridSize));
@@ -7257,6 +7268,11 @@ var $author$project$Update$moveTilesDown = function (model) {
 				{currentTiles: fallingTiles}),
 			landedTiles);
 	}
+};
+var $author$project$Model$restartGame = function (model) {
+	return _Utils_update(
+		$author$project$Model$initialModel,
+		{gameState: $author$project$Model$Playing, player: model.player});
 };
 var $elm$core$List$filter = F2(
 	function (isGood, list) {
@@ -7303,6 +7319,16 @@ var $author$project$Update$spawnNewTiles = F2(
 var $author$project$Update$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
+			case 'Registered':
+				var name = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							player: $elm$core$Maybe$Just(
+								{bestScore: 0, name: name})
+						}),
+					$elm$core$Platform$Cmd$none);
 			case 'NewTiles':
 				var values = msg.a;
 				return A2($author$project$Update$spawnNewTiles, model, values);
@@ -7321,7 +7347,9 @@ var $author$project$Update$update = F2(
 						{gameState: $author$project$Model$Playing}),
 					$elm$core$Platform$Cmd$none);
 			case 'Restart':
-				return _Utils_Tuple2($author$project$Model$initialModel, $elm$core$Platform$Cmd$none);
+				return _Utils_Tuple2(
+					$author$project$Model$restartGame(model),
+					$elm$core$Platform$Cmd$none);
 			case 'DragStart':
 				var _v1 = msg.a;
 				var x = _v1.a;
@@ -7397,15 +7425,11 @@ var $author$project$Update$update = F2(
 				var _v7 = msg.a;
 				var x = _v7.a;
 				var y = _v7.b;
-				var _v8 = A2(
-					$elm$core$Debug$log,
-					'click:',
-					_Utils_Tuple3(x, y, model.selected));
-				var _v9 = _Utils_Tuple2(model.gameState, model.selected);
-				if (_v9.a.$ === 'Playing') {
-					if (_v9.b.$ === 'Nothing') {
-						var _v10 = _v9.a;
-						var _v11 = _v9.b;
+				var _v8 = _Utils_Tuple2(model.gameState, model.selected);
+				if (_v8.a.$ === 'Playing') {
+					if (_v8.b.$ === 'Nothing') {
+						var _v9 = _v8.a;
+						var _v10 = _v8.b;
 						return _Utils_Tuple2(
 							_Utils_update(
 								model,
@@ -7415,8 +7439,8 @@ var $author$project$Update$update = F2(
 								}),
 							$elm$core$Platform$Cmd$none);
 					} else {
-						var _v12 = _v9.a;
-						var selected = _v9.b.a;
+						var _v11 = _v8.a;
+						var selected = _v8.b.a;
 						return A2(
 							$author$project$Update$isAdjacent,
 							selected,
@@ -7447,26 +7471,6 @@ var $author$project$Msg$DragStart = function (a) {
 	return {$: 'DragStart', a: a};
 };
 var $author$project$Msg$Drop = {$: 'Drop'};
-var $rtfeldman$elm_css$VirtualDom$Styled$Attribute = F3(
-	function (a, b, c) {
-		return {$: 'Attribute', a: a, b: b, c: c};
-	});
-var $rtfeldman$elm_css$VirtualDom$Styled$property = F2(
-	function (key, value) {
-		return A3(
-			$rtfeldman$elm_css$VirtualDom$Styled$Attribute,
-			A2($elm$virtual_dom$VirtualDom$property, key, value),
-			false,
-			'');
-	});
-var $rtfeldman$elm_css$Html$Styled$Attributes$stringProperty = F2(
-	function (key, string) {
-		return A2(
-			$rtfeldman$elm_css$VirtualDom$Styled$property,
-			key,
-			$elm$json$Json$Encode$string(string));
-	});
-var $rtfeldman$elm_css$Html$Styled$Attributes$class = $rtfeldman$elm_css$Html$Styled$Attributes$stringProperty('className');
 var $rtfeldman$elm_css$Css$Preprocess$AppendProperty = function (a) {
 	return {$: 'AppendProperty', a: a};
 };
@@ -7683,6 +7687,10 @@ var $author$project$Utils$Styles$container = _List_fromArray(
 		$rtfeldman$elm_css$Css$lineHeight(
 		$rtfeldman$elm_css$Css$em(2.0))
 	]);
+var $rtfeldman$elm_css$VirtualDom$Styled$Attribute = F3(
+	function (a, b, c) {
+		return {$: 'Attribute', a: a, b: b, c: c};
+	});
 var $elm$core$List$any = F2(
 	function (isOkay, list) {
 		any:
@@ -9136,6 +9144,21 @@ var $rtfeldman$elm_css$VirtualDom$Styled$attribute = F2(
 			'');
 	});
 var $rtfeldman$elm_css$Svg$Styled$Attributes$height = $rtfeldman$elm_css$VirtualDom$Styled$attribute('height');
+var $rtfeldman$elm_css$VirtualDom$Styled$property = F2(
+	function (key, value) {
+		return A3(
+			$rtfeldman$elm_css$VirtualDom$Styled$Attribute,
+			A2($elm$virtual_dom$VirtualDom$property, key, value),
+			false,
+			'');
+	});
+var $rtfeldman$elm_css$Html$Styled$Attributes$stringProperty = F2(
+	function (key, string) {
+		return A2(
+			$rtfeldman$elm_css$VirtualDom$Styled$property,
+			key,
+			$elm$json$Json$Encode$string(string));
+	});
 var $rtfeldman$elm_css$Html$Styled$Attributes$name = $rtfeldman$elm_css$Html$Styled$Attributes$stringProperty('name');
 var $rtfeldman$elm_css$Css$none = {backgroundImage: $rtfeldman$elm_css$Css$Structure$Compatible, blockAxisOverflow: $rtfeldman$elm_css$Css$Structure$Compatible, borderStyle: $rtfeldman$elm_css$Css$Structure$Compatible, cursor: $rtfeldman$elm_css$Css$Structure$Compatible, display: $rtfeldman$elm_css$Css$Structure$Compatible, hoverCapability: $rtfeldman$elm_css$Css$Structure$Compatible, inlineAxisOverflow: $rtfeldman$elm_css$Css$Structure$Compatible, keyframes: $rtfeldman$elm_css$Css$Structure$Compatible, lengthOrNone: $rtfeldman$elm_css$Css$Structure$Compatible, lengthOrNoneOrMinMaxDimension: $rtfeldman$elm_css$Css$Structure$Compatible, lengthOrNumberOrAutoOrNoneOrContent: $rtfeldman$elm_css$Css$Structure$Compatible, listStyleType: $rtfeldman$elm_css$Css$Structure$Compatible, listStyleTypeOrPositionOrImage: $rtfeldman$elm_css$Css$Structure$Compatible, none: $rtfeldman$elm_css$Css$Structure$Compatible, outline: $rtfeldman$elm_css$Css$Structure$Compatible, pointerDevice: $rtfeldman$elm_css$Css$Structure$Compatible, pointerEvents: $rtfeldman$elm_css$Css$Structure$Compatible, resize: $rtfeldman$elm_css$Css$Structure$Compatible, scriptingSupport: $rtfeldman$elm_css$Css$Structure$Compatible, textDecorationLine: $rtfeldman$elm_css$Css$Structure$Compatible, textTransform: $rtfeldman$elm_css$Css$Structure$Compatible, touchAction: $rtfeldman$elm_css$Css$Structure$Compatible, transform: $rtfeldman$elm_css$Css$Structure$Compatible, updateFrequency: $rtfeldman$elm_css$Css$Structure$Compatible, value: 'none'};
 var $elm$json$Json$Decode$field = _Json_decodeField;
@@ -9182,6 +9205,146 @@ var $rtfeldman$elm_css$Html$Styled$Events$on = F2(
 	});
 var $rtfeldman$elm_css$Svg$Styled$Events$on = $rtfeldman$elm_css$Html$Styled$Events$on;
 var $rtfeldman$elm_css$Html$Styled$p = $rtfeldman$elm_css$Html$Styled$node('p');
+var $author$project$Msg$Registered = function (a) {
+	return {$: 'Registered', a: a};
+};
+var $rtfeldman$elm_css$Html$Styled$Events$alwaysStop = function (x) {
+	return _Utils_Tuple2(x, true);
+};
+var $elm$virtual_dom$VirtualDom$MayStopPropagation = function (a) {
+	return {$: 'MayStopPropagation', a: a};
+};
+var $rtfeldman$elm_css$Html$Styled$Events$stopPropagationOn = F2(
+	function (event, decoder) {
+		return A2(
+			$rtfeldman$elm_css$VirtualDom$Styled$on,
+			event,
+			$elm$virtual_dom$VirtualDom$MayStopPropagation(decoder));
+	});
+var $elm$json$Json$Decode$at = F2(
+	function (fields, decoder) {
+		return A3($elm$core$List$foldr, $elm$json$Json$Decode$field, decoder, fields);
+	});
+var $elm$json$Json$Decode$string = _Json_decodeString;
+var $rtfeldman$elm_css$Html$Styled$Events$targetValue = A2(
+	$elm$json$Json$Decode$at,
+	_List_fromArray(
+		['target', 'value']),
+	$elm$json$Json$Decode$string);
+var $rtfeldman$elm_css$Html$Styled$Events$onInput = function (tagger) {
+	return A2(
+		$rtfeldman$elm_css$Html$Styled$Events$stopPropagationOn,
+		'input',
+		A2(
+			$elm$json$Json$Decode$map,
+			$rtfeldman$elm_css$Html$Styled$Events$alwaysStop,
+			A2($elm$json$Json$Decode$map, tagger, $rtfeldman$elm_css$Html$Styled$Events$targetValue)));
+};
+var $rtfeldman$elm_css$Html$Styled$Attributes$placeholder = $rtfeldman$elm_css$Html$Styled$Attributes$stringProperty('placeholder');
+var $rtfeldman$elm_css$Html$Styled$h2 = $rtfeldman$elm_css$Html$Styled$node('h2');
+var $rtfeldman$elm_css$Html$Styled$Internal$css = function (styles) {
+	var cssTemplate = $rtfeldman$elm_css$VirtualDom$Styled$getCssTemplate(styles);
+	var classProperty = A2($elm$virtual_dom$VirtualDom$attribute, '', '');
+	return A3($rtfeldman$elm_css$VirtualDom$Styled$Attribute, classProperty, true, cssTemplate);
+};
+var $rtfeldman$elm_css$Html$Styled$styled = F4(
+	function (fn, styles, attrs, children) {
+		return A2(
+			fn,
+			A2(
+				$elm$core$List$cons,
+				$rtfeldman$elm_css$Html$Styled$Internal$css(styles),
+				attrs),
+			children);
+	});
+var $author$project$Utils$Styles$sH2 = A2($rtfeldman$elm_css$Html$Styled$styled, $rtfeldman$elm_css$Html$Styled$h2, _List_Nil);
+var $rtfeldman$elm_css$Css$fontSize = $rtfeldman$elm_css$Css$prop1('font-size');
+var $rtfeldman$elm_css$Html$Styled$input = $rtfeldman$elm_css$Html$Styled$node('input');
+var $rtfeldman$elm_css$Css$padding = $rtfeldman$elm_css$Css$prop1('padding');
+var $rtfeldman$elm_css$Css$PxUnits = {$: 'PxUnits'};
+var $rtfeldman$elm_css$Css$px = A2($rtfeldman$elm_css$Css$Internal$lengthConverter, $rtfeldman$elm_css$Css$PxUnits, 'px');
+var $author$project$Utils$Styles$sInput = A2(
+	$rtfeldman$elm_css$Html$Styled$styled,
+	$rtfeldman$elm_css$Html$Styled$input,
+	_List_fromArray(
+		[
+			$rtfeldman$elm_css$Css$fontSize(
+			$rtfeldman$elm_css$Css$em(1.3)),
+			$rtfeldman$elm_css$Css$padding(
+			$rtfeldman$elm_css$Css$px(5))
+		]));
+var $rtfeldman$elm_css$VirtualDom$Styled$Unstyled = function (a) {
+	return {$: 'Unstyled', a: a};
+};
+var $rtfeldman$elm_css$VirtualDom$Styled$text = function (str) {
+	return $rtfeldman$elm_css$VirtualDom$Styled$Unstyled(
+		$elm$virtual_dom$VirtualDom$text(str));
+};
+var $rtfeldman$elm_css$Html$Styled$text = $rtfeldman$elm_css$VirtualDom$Styled$text;
+var $author$project$View$playerView = function (model) {
+	var register = A2(
+		$rtfeldman$elm_css$Html$Styled$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$author$project$Utils$Styles$sH2,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$rtfeldman$elm_css$Html$Styled$text('Register to Play:')
+					])),
+				A2(
+				$author$project$Utils$Styles$sInput,
+				_List_fromArray(
+					[
+						$rtfeldman$elm_css$Html$Styled$Attributes$placeholder('Your name'),
+						$rtfeldman$elm_css$Html$Styled$Events$onInput($author$project$Msg$Registered)
+					]),
+				_List_Nil)
+			]));
+	var _v0 = _Utils_Tuple2(model.gameState, model.player);
+	_v0$0:
+	while (true) {
+		if (_v0.b.$ === 'Nothing') {
+			if (_v0.a.$ === 'NotStarted') {
+				break _v0$0;
+			} else {
+				var _v2 = _v0.b;
+				return register;
+			}
+		} else {
+			if (_v0.a.$ === 'NotStarted') {
+				break _v0$0;
+			} else {
+				var p = _v0.b.a;
+				return A2(
+					$rtfeldman$elm_css$Html$Styled$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$rtfeldman$elm_css$Html$Styled$h3,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$rtfeldman$elm_css$Html$Styled$text('Player:' + p.name)
+								])),
+							A2(
+							$rtfeldman$elm_css$Html$Styled$h3,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$rtfeldman$elm_css$Html$Styled$text(
+									'Best Score:' + $elm$core$String$fromInt(p.bestScore))
+								]))
+						]));
+			}
+		}
+	}
+	var _v1 = _v0.a;
+	return register;
+};
 var $elm$virtual_dom$VirtualDom$MayPreventDefault = function (a) {
 	return {$: 'MayPreventDefault', a: a};
 };
@@ -9633,13 +9796,6 @@ var $rtfeldman$elm_css$Svg$Styled$node = $rtfeldman$elm_css$VirtualDom$Styled$no
 var $rtfeldman$elm_css$Svg$Styled$g = $rtfeldman$elm_css$Svg$Styled$node('g');
 var $rtfeldman$elm_css$Svg$Styled$rect = $rtfeldman$elm_css$Svg$Styled$node('rect');
 var $rtfeldman$elm_css$Svg$Styled$Attributes$strokeWidth = $rtfeldman$elm_css$VirtualDom$Styled$attribute('stroke-width');
-var $rtfeldman$elm_css$VirtualDom$Styled$Unstyled = function (a) {
-	return {$: 'Unstyled', a: a};
-};
-var $rtfeldman$elm_css$VirtualDom$Styled$text = function (str) {
-	return $rtfeldman$elm_css$VirtualDom$Styled$Unstyled(
-		$elm$virtual_dom$VirtualDom$text(str));
-};
 var $rtfeldman$elm_css$Svg$Styled$text = $rtfeldman$elm_css$VirtualDom$Styled$text;
 var $rtfeldman$elm_css$Svg$Styled$Attributes$textAnchor = $rtfeldman$elm_css$VirtualDom$Styled$attribute('text-anchor');
 var $rtfeldman$elm_css$Svg$Styled$text_ = $rtfeldman$elm_css$Svg$Styled$node('text');
@@ -9790,7 +9946,6 @@ var $author$project$View$renderGame = function (model) {
 	return _Utils_ap(gridCells, fallingTiles);
 };
 var $rtfeldman$elm_css$Svg$Styled$svg = $rtfeldman$elm_css$Svg$Styled$node('svg');
-var $rtfeldman$elm_css$Html$Styled$text = $rtfeldman$elm_css$VirtualDom$Styled$text;
 var $rtfeldman$elm_css$Css$touchAction = $rtfeldman$elm_css$Css$prop1('touch-action');
 var $rtfeldman$elm_css$Svg$Styled$Attributes$viewBox = $rtfeldman$elm_css$VirtualDom$Styled$attribute('viewBox');
 var $author$project$Msg$Pause = {$: 'Pause'};
@@ -9811,7 +9966,6 @@ var $rtfeldman$elm_css$Html$Styled$button = $rtfeldman$elm_css$Html$Styled$node(
 var $rtfeldman$elm_css$Css$color = function (c) {
 	return A2($rtfeldman$elm_css$Css$property, 'color', c.value);
 };
-var $rtfeldman$elm_css$Css$fontSize = $rtfeldman$elm_css$Css$prop1('font-size');
 var $rtfeldman$elm_css$Css$prop2 = F3(
 	function (key, argA, argB) {
 		return A2($rtfeldman$elm_css$Css$property, key, argA.value + (' ' + argB.value));
@@ -9819,23 +9973,6 @@ var $rtfeldman$elm_css$Css$prop2 = F3(
 var $rtfeldman$elm_css$Css$margin2 = $rtfeldman$elm_css$Css$prop2('margin');
 var $rtfeldman$elm_css$Css$padding2 = $rtfeldman$elm_css$Css$prop2('padding');
 var $rtfeldman$elm_css$Css$pointer = {cursor: $rtfeldman$elm_css$Css$Structure$Compatible, value: 'pointer'};
-var $rtfeldman$elm_css$Css$PxUnits = {$: 'PxUnits'};
-var $rtfeldman$elm_css$Css$px = A2($rtfeldman$elm_css$Css$Internal$lengthConverter, $rtfeldman$elm_css$Css$PxUnits, 'px');
-var $rtfeldman$elm_css$Html$Styled$Internal$css = function (styles) {
-	var cssTemplate = $rtfeldman$elm_css$VirtualDom$Styled$getCssTemplate(styles);
-	var classProperty = A2($elm$virtual_dom$VirtualDom$attribute, '', '');
-	return A3($rtfeldman$elm_css$VirtualDom$Styled$Attribute, classProperty, true, cssTemplate);
-};
-var $rtfeldman$elm_css$Html$Styled$styled = F4(
-	function (fn, styles, attrs, children) {
-		return A2(
-			fn,
-			A2(
-				$elm$core$List$cons,
-				$rtfeldman$elm_css$Html$Styled$Internal$css(styles),
-				attrs),
-			children);
-	});
 var $author$project$Utils$Styles$sButton = A2(
 	$rtfeldman$elm_css$Html$Styled$styled,
 	$rtfeldman$elm_css$Html$Styled$button,
@@ -9861,10 +9998,19 @@ var $author$project$Utils$Styles$sButton = A2(
 			$rtfeldman$elm_css$Css$px(2)),
 			$rtfeldman$elm_css$Css$cursor($rtfeldman$elm_css$Css$pointer)
 		]));
-var $rtfeldman$elm_css$Html$Styled$h2 = $rtfeldman$elm_css$Html$Styled$node('h2');
-var $author$project$Utils$Styles$sH2 = A2($rtfeldman$elm_css$Html$Styled$styled, $rtfeldman$elm_css$Html$Styled$h2, _List_Nil);
 var $author$project$View$viewGameControls = function (gameState) {
 	switch (gameState.$) {
+		case 'NotStarted':
+			return A2(
+				$author$project$Utils$Styles$sButton,
+				_List_fromArray(
+					[
+						$rtfeldman$elm_css$Html$Styled$Events$onClick($author$project$Msg$Restart)
+					]),
+				_List_fromArray(
+					[
+						$rtfeldman$elm_css$Html$Styled$text('Play')
+					]));
 		case 'Playing':
 			return A2(
 				$author$project$Utils$Styles$sButton,
@@ -9967,19 +10113,14 @@ var $author$project$View$view = function (model) {
 					])),
 				A2(
 				$rtfeldman$elm_css$Html$Styled$div,
+				_List_Nil,
 				_List_fromArray(
 					[
-						$rtfeldman$elm_css$Html$Styled$Attributes$class('game-controls')
-					]),
-				_List_fromArray(
-					[
+						$author$project$View$playerView(model),
 						$author$project$View$viewGameControls(model.gameState),
 						A2(
 						$rtfeldman$elm_css$Html$Styled$h3,
-						_List_fromArray(
-							[
-								$rtfeldman$elm_css$Html$Styled$Attributes$class('score')
-							]),
+						_List_Nil,
 						_List_fromArray(
 							[
 								$rtfeldman$elm_css$Html$Styled$text(
